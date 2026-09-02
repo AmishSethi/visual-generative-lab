@@ -666,7 +666,7 @@ def evaluate_properties_comprehensive(image, expected_properties, include_proper
                 _use_v2 = os.environ.get("VGL_SHAPE_METRIC", "locked") == "v2"
                 if _use_v2:
                     from vgl.shape_metric_v2 import classify_shape as _classify_v2
-                    _v2_name = _classify_v2(image)
+                    _v2_name = _classify_v2(image_np)   # the HWC uint8 array the locked path scores
                     best_shape_id = shape_names.index(_v2_name) if _v2_name in shape_names else 0
                     best_iou = 1.0
                 # Imported outside the try so a missing module fails loudly instead
