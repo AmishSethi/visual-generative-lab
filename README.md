@@ -199,8 +199,8 @@ Point `manifest.py` at your own storage before submitting — the paths there ar
 Count is the one skill whose dataset differs from the naive construction, and the reason is worth
 knowing if you build on this code. Our first count dataset placed radius-8 circles at random
 non-overlapping positions on a 64×64 canvas. At n=7 that is near the geometric limit of the frame:
-seven discs of radius 8 need centres ≥ 18 px apart inside a 48×48 region whose hexagonal packing
-capacity is 8.2 centres. Admissible layouts are nearly crystalline, small placement errors merge
+seven discs of radius 8 need centers ≥ 18 px apart inside a 48×48 region that holds at most twelve
+such centers, so seven discs fill more than half of the admissible positions. Admissible layouts are nearly crystalline, small placement errors merge
 objects, and the watershed counter can only read 93.8% of *ground-truth* renders.
 
 The released dataset uses radius-4 circles on a 16-px lattice (8 px clearance), where the counter
