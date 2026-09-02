@@ -1,0 +1,23 @@
+# Environment used for every result in the paper.
+#   conda env create -f environment.yml && conda activate vgl
+name: vgl
+channels:
+  - pytorch
+  - nvidia
+  - conda-forge
+dependencies:
+  - python=3.12
+  - pytorch=2.5.1
+  - torchvision=0.20.1
+  - pytorch-cuda=12.1
+  - numpy=2.0.1
+  - scipy=1.16.0
+  - matplotlib=3.10.3
+  - pillow=11.1.0
+  - tqdm
+  - pip
+  - pip:
+      - timm==1.0.16
+      - diffusers==0.34.0
+      - accelerate
+      - opencv-python==4.11.0.86

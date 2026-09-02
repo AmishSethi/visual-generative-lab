@@ -1,0 +1,33 @@
+Attribution-NonCommercial 4.0 International (CC BY-NC 4.0)
+
+Copyright (c) 2026 Amish Sethi, Boya Zeng, Wenhao Chai, Zhuang Liu
+
+This work is licensed under the Creative Commons Attribution-NonCommercial 4.0
+International License. To view a copy of this license, visit
+https://creativecommons.org/licenses/by-nc/4.0/ or send a letter to
+Creative Commons, PO Box 1866, Mountain View, CA 94042, USA.
+
+You are free to:
+  Share  — copy and redistribute the material in any medium or format
+  Adapt  — remix, transform, and build upon the material
+
+Under the following terms:
+  Attribution   — You must give appropriate credit, provide a link to the
+                  license, and indicate if changes were made.
+  NonCommercial — You may not use the material for commercial purposes.
+
+-------------------------------------------------------------------------------
+WHY THIS LICENSE
+
+This project is a derivative of DiT (https://github.com/facebookresearch/DiT),
+released by Meta Platforms, Inc. under CC BY-NC 4.0. Because the model code in
+vgl/models*.py and the training entry points in scripts/train*.py are derived
+from DiT, this repository inherits the CC BY-NC 4.0 terms, including the
+non-commercial restriction. Files carrying a Meta Platforms copyright header
+remain subject to the original DiT license.
+
+THIRD-PARTY COMPONENTS
+
+vgl/diffusion/ is adapted from OpenAI's guided-diffusion / ADM
+(https://github.com/openai/guided-diffusion), released under the MIT License.
+Those files retain their original MIT terms and headers.

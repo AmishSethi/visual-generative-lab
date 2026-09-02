@@ -1,0 +1,412 @@
+{
+  "position_min_margin": 4.0,
+  "size_extrap_range": [
+    1,
+    4,
+    21,
+    30
+  ],
+  "position": {
+    "baseline": {
+      "per_seed": [
+        {
+          "seed": 0,
+          "accuracy": 11.4375,
+          "mean_position_error": 3.378162286835601,
+          "num_conditions": 320
+        },
+        {
+          "seed": 1,
+          "accuracy": 48.546875,
+          "mean_position_error": 2.4024092175653973,
+          "num_conditions": 320
+        },
+        {
+          "seed": 2,
+          "accuracy": 32.921875,
+          "mean_position_error": 2.2504057050576556,
+          "num_conditions": 320
+        }
+      ],
+      "mean_accuracy": 30.96875,
+      "std_accuracy": 18.63162502767472,
+      "n_seeds": 3
+    },
+    "sinusoidal": {
+      "per_seed": [
+        {
+          "seed": 0,
+          "accuracy": 0.0,
+          "mean_position_error": 8.957893411062726,
+          "num_conditions": 320
+        },
+        {
+          "seed": 1,
+          "accuracy": 0.0,
+          "mean_position_error": 8.783311126445286,
+          "num_conditions": 320
+        },
+        {
+          "seed": 2,
+          "accuracy": 0.0,
+          "mean_position_error": 8.900446582932435,
+          "num_conditions": 320
+        }
+      ],
+      "mean_accuracy": 0.0,
+      "std_accuracy": 0.0,
+      "n_seeds": 3
+    },
+    "rotary": {
+      "per_seed": [
+        {
+          "seed": 0,
+          "accuracy": 0.0,
+          "mean_position_error": 8.086031833534403,
+          "num_conditions": 320
+        },
+        {
+          "seed": 1,
+          "accuracy": 0.0,
+          "mean_position_error": 7.396929733874488,
+          "num_conditions": 320
+        },
+        {
+          "seed": 2,
+          "accuracy": 0.0,
+          "mean_position_error": 9.619200558806565,
+          "num_conditions": 320
+        }
+      ],
+      "mean_accuracy": 0.0,
+      "std_accuracy": 0.0,
+      "n_seeds": 3
+    },
+    "adaln": {
+      "per_seed": [
+        {
+          "seed": 0,
+          "accuracy": 44.9375,
+          "mean_position_error": 2.7062986169340073,
+          "num_conditions": 320
+        },
+        {
+          "seed": 1,
+          "accuracy": 63.09375,
+          "mean_position_error": 2.1354117964621975,
+          "num_conditions": 320
+        },
+        {
+          "seed": 2,
+          "accuracy": 82.796875,
+          "mean_position_error": 1.366830494957578,
+          "num_conditions": 320
+        }
+      ],
+      "mean_accuracy": 63.609375,
+      "std_accuracy": 18.934953675758624,
+      "n_seeds": 3
+    },
+    "vae": {
+      "per_seed": [
+        {
+          "seed": 0,
+          "accuracy": 0.046875,
+          "mean_position_error": 4.972812861103256,
+          "num_conditions": 320
+        },
+        {
+          "seed": 1,
+          "accuracy": 0.125,
+          "mean_position_error": 4.74536388740445,
+          "num_conditions": 320
+        },
+        {
+          "seed": 2,
+          "accuracy": 0.265625,
+          "mean_position_error": 4.496153787207128,
+          "num_conditions": 320
+        }
+      ],
+      "mean_accuracy": 0.14583333333333334,
+      "std_accuracy": 0.1108531075718373,
+      "n_seeds": 3
+    },
+    "flow": {
+      "per_seed": [
+        {
+          "seed": 0,
+          "accuracy": 10.875,
+          "mean_position_error": 2.905878136575076,
+          "num_conditions": 320
+        },
+        {
+          "seed": 1,
+          "accuracy": 3.421875,
+          "mean_position_error": 3.0846986667947114,
+          "num_conditions": 320
+        },
+        {
+          "seed": 2,
+          "accuracy": 22.140625,
+          "mean_position_error": 2.748874217329449,
+          "num_conditions": 320
+        }
+      ],
+      "mean_accuracy": 12.145833333333334,
+      "std_accuracy": 9.423861385411945,
+      "n_seeds": 3
+    },
+    "unet": {
+      "per_seed": [
+        {
+          "seed": 0,
+          "accuracy": 1.1627906976744187,
+          "mean_position_error": 4.009512069967519,
+          "num_conditions": 86
+        },
+        {
+          "seed": 1,
+          "accuracy": 82.20930232558139,
+          "mean_position_error": 1.3515286086964404,
+          "num_conditions": 86
+        },
+        {
+          "seed": 2,
+          "accuracy": 66.51162790697674,
+          "mean_position_error": 1.8179797641962185,
+          "num_conditions": 86
+        }
+      ],
+      "mean_accuracy": 49.961240310077514,
+      "std_accuracy": 42.98337770544344,
+      "n_seeds": 3
+    }
+  },
+  "size": {
+    "baseline": {
+      "per_seed": [
+        {
+          "seed": 0,
+          "accuracy": 50.714285714285715,
+          "mean_iou": 0.6025616347610848,
+          "num_conditions": 14,
+          "source": "extended",
+          "size_extrap_max": 30
+        },
+        {
+          "seed": 1,
+          "accuracy": 41.785714285714285,
+          "mean_iou": 0.5120085441120098,
+          "num_conditions": 14,
+          "source": "extended",
+          "size_extrap_max": 30
+        },
+        {
+          "seed": 2,
+          "accuracy": 49.285714285714285,
+          "mean_iou": 0.6934449324252557,
+          "num_conditions": 14,
+          "source": "extended",
+          "size_extrap_max": 30
+        }
+      ],
+      "mean_accuracy": 47.26190476190476,
+      "std_accuracy": 4.796008828210402,
+      "n_seeds": 3,
+      "all_extended": true
+    },
+    "sinusoidal": {
+      "per_seed": [
+        {
+          "seed": 0,
+          "accuracy": 7.142857142857143,
+          "mean_iou": 0.34650714267051097,
+          "num_conditions": 14,
+          "source": "extended",
+          "size_extrap_max": 30
+        },
+        {
+          "seed": 1,
+          "accuracy": 7.142857142857143,
+          "mean_iou": 0.333147676324105,
+          "num_conditions": 14,
+          "source": "extended",
+          "size_extrap_max": 30
+        },
+        {
+          "seed": 2,
+          "accuracy": 7.142857142857143,
+          "mean_iou": 0.33835312936520934,
+          "num_conditions": 14,
+          "source": "extended",
+          "size_extrap_max": 30
+        }
+      ],
+      "mean_accuracy": 7.142857142857143,
+      "std_accuracy": 0.0,
+      "n_seeds": 3,
+      "all_extended": true
+    },
+    "rotary": {
+      "per_seed": [
+        {
+          "seed": 0,
+          "accuracy": 7.142857142857143,
+          "mean_iou": 0.2941419342698276,
+          "num_conditions": 14,
+          "source": "extended",
+          "size_extrap_max": 30
+        },
+        {
+          "seed": 1,
+          "accuracy": 14.285714285714286,
+          "mean_iou": 0.3421592566751349,
+          "num_conditions": 14,
+          "source": "extended",
+          "size_extrap_max": 30
+        },
+        {
+          "seed": 2,
+          "accuracy": 9.642857142857142,
+          "mean_iou": 0.33102153890885416,
+          "num_conditions": 14,
+          "source": "extended",
+          "size_extrap_max": 30
+        }
+      ],
+      "mean_accuracy": 10.357142857142858,
+      "std_accuracy": 3.624604130390079,
+      "n_seeds": 3,
+      "all_extended": true
+    },
+    "adaln": {
+      "per_seed": [
+        {
+          "seed": 0,
+          "accuracy": 35.714285714285715,
+          "mean_iou": 0.7055354041850176,
+          "num_conditions": 14,
+          "source": "extended",
+          "size_extrap_max": 30
+        },
+        {
+          "seed": 1,
+          "accuracy": 30.0,
+          "mean_iou": 0.6449825116572389,
+          "num_conditions": 14,
+          "source": "extended",
+          "size_extrap_max": 30
+        },
+        {
+          "seed": 2,
+          "accuracy": 28.571428571428573,
+          "mean_iou": 0.6409095783893068,
+          "num_conditions": 14,
+          "source": "extended",
+          "size_extrap_max": 30
+        }
+      ],
+      "mean_accuracy": 31.42857142857143,
+      "std_accuracy": 3.779644730092272,
+      "n_seeds": 3,
+      "all_extended": true
+    },
+    "vae": {
+      "per_seed": [
+        {
+          "seed": 0,
+          "accuracy": 4.642857142857143,
+          "mean_iou": 0.365736757563753,
+          "num_conditions": 14,
+          "source": "extended",
+          "size_extrap_max": 30
+        },
+        {
+          "seed": 1,
+          "accuracy": 7.142857142857143,
+          "mean_iou": 0.38551968222985544,
+          "num_conditions": 14,
+          "source": "extended",
+          "size_extrap_max": 30
+        },
+        {
+          "seed": 2,
+          "accuracy": 6.428571428571429,
+          "mean_iou": 0.3652294393764363,
+          "num_conditions": 14,
+          "source": "extended",
+          "size_extrap_max": 30
+        }
+      ],
+      "mean_accuracy": 6.071428571428572,
+      "std_accuracy": 1.287696884094282,
+      "n_seeds": 3,
+      "all_extended": true
+    },
+    "flow": {
+      "per_seed": [
+        {
+          "seed": 0,
+          "accuracy": 20.714285714285715,
+          "mean_iou": 0.4261067000647965,
+          "num_conditions": 14,
+          "source": "extended",
+          "size_extrap_max": 30
+        },
+        {
+          "seed": 1,
+          "accuracy": 22.142857142857142,
+          "mean_iou": 0.4384035532071693,
+          "num_conditions": 14,
+          "source": "extended",
+          "size_extrap_max": 30
+        },
+        {
+          "seed": 2,
+          "accuracy": 29.285714285714285,
+          "mean_iou": 0.4165662570112753,
+          "num_conditions": 14,
+          "source": "extended",
+          "size_extrap_max": 30
+        }
+      ],
+      "mean_accuracy": 24.047619047619047,
+      "std_accuracy": 4.592214648091883,
+      "n_seeds": 3,
+      "all_extended": true
+    },
+    "unet": {
+      "per_seed": [
+        {
+          "seed": 0,
+          "accuracy": 25.714285714285715,
+          "mean_iou": 0.5229855982208261,
+          "num_conditions": 14,
+          "source": "extended",
+          "size_extrap_max": 30
+        },
+        {
+          "seed": 1,
+          "accuracy": 14.642857142857142,
+          "mean_iou": 0.527089249912691,
+          "num_conditions": 14,
+          "source": "extended",
+          "size_extrap_max": 30
+        },
+        {
+          "seed": 2,
+          "accuracy": 19.285714285714285,
+          "mean_iou": 0.5428882513776535,
+          "num_conditions": 14,
+          "source": "extended",
+          "size_extrap_max": 30
+        }
+      ],
+      "mean_accuracy": 19.88095238095238,
+      "std_accuracy": 5.559664013731247,
+      "n_seeds": 3,
+      "all_extended": true
+    }
+  }
+}

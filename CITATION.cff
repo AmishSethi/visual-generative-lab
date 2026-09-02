@@ -1,0 +1,29 @@
+cff-version: 1.2.0
+message: "If you use this software or the VGL benchmark, please cite the paper below."
+title: "Visual Generative Lab (VGL)"
+authors:
+  - family-names: Sethi
+    given-names: Amish
+  - family-names: Zeng
+    given-names: Boya
+  - family-names: Chai
+    given-names: Wenhao
+  - family-names: Liu
+    given-names: Zhuang
+repository-code: "https://github.com/AmishSethi/visual-generative-lab"
+license: CC-BY-NC-4.0
+version: 1.0.0
+preferred-citation:
+  type: article
+  title: "Do Diffusion Models Learn to Generalize Basic Visual Skills?"
+  authors:
+    - family-names: Sethi
+      given-names: Amish
+    - family-names: Zeng
+      given-names: Boya
+    - family-names: Chai
+      given-names: Wenhao
+    - family-names: Liu
+      given-names: Zhuang
+  journal: "arXiv preprint"
+  year: 2026

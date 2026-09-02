@@ -1,0 +1,51 @@
+# Datasets, checkpoints, results — regenerate or download, never commit
+data/
+datasets/
+runs/
+results/
+outputs/
+checkpoints/
+*.pt
+*.pth
+*.ckpt
+*.safetensors
+
+# Generated samples and figures
+samples/
+*.png
+*.jpg
+*.pdf
+!docs/**/*.png
+!docs/**/*.pdf
+
+# SLURM
+slurm/
+logs/
+*.out
+*.err
+slurm-*.out
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+build/
+dist/
+.eggs/
+.venv/
+venv/
+.ipynb_checkpoints/
+
+# Tooling / OS
+.DS_Store
+.vscode/
+.idea/
+.mplcache/
+.pytest_cache/
+.coverage
+
+# Credentials — never commit
+*.pem
+*.key
+.env
+secrets.*
