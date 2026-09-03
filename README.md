@@ -229,11 +229,15 @@ python -m paper_runs.rebuttal.count_variants --variants grid_r4   # count: radiu
 
 Datasets are `ImageFolder`-structured with the skill value encoded in the directory name.
 
-For compositional datasets the sampler now guarantees that every in-range value of every skill
-appears in at least one training combination. The sampler that produced the published Table 3
-datasets guaranteed this only for shape and color; at 25% coverage three datasets (`shape_count`,
-`count_rotation`, `radius_rotation`) left one or two values unseen. `paper_runs/table3/audit_compositional.py`
-reports this for any dataset root; the other 30 published datasets are unaffected and regenerate identically. Training
+For compositional datasets the sampler guarantees that every in-range value of every skill
+appears in at least one training combination; otherwise a held-out combination tests an unseen value
+rather than an unseen pairing. The sampler that produced the submitted Table 3 datasets guaranteed
+this only for shape and color: audited on whole values (a position is an (x, y) pair), 7 of the 21
+two-skill datasets violated it, all at 25% or 50% coverage, and so did the 25% datasets of the
+fixed-budget color+shape sweep (`scripts/generate_color_shape_dataset.py`, which now repairs by
+swapping combinations so the coverage is unchanged). `paper_runs/table3/audit_compositional.py`
+reports this for any dataset root and exits with the number of violating datasets; the clean datasets
+regenerate identically. Training
 domains and extrapolation values:
 
 | skill | type | training domain | extrapolation values |
@@ -273,7 +277,9 @@ reads only 32–43% of ground-truth `shape_count` renders, whose objects fall ou
 so the shape+count cells it produced are bounded by the metric. `vgl/shape_metric_v2.py` matches
 templates of every size in place and reads 93–98% of ground truth on every shape dataset
 (`python -m paper_runs.table3.shape_metric_ceiling DATASET_ROOT`); select it with
-`VGL_SHAPE_METRIC=v2`. The published tables use the original metric. `paper_runs/rebuttal/counter_crossval.py` cross-validates the count metric against
+`VGL_SHAPE_METRIC=v2`. The published tables use the original metric. The count metric has its own ceiling on shape+count renders: it misses every two- and
+three-square scene, so its ground-truth ceiling there is 86–100% on training splits and 67–80% on held-out
+combinations (`python -m paper_runs.table3.count_metric_ceiling DATASET_ROOT`). `paper_runs/rebuttal/counter_crossval.py` cross-validates the count metric against
 three independent counters.
 
 ---

@@ -45,4 +45,8 @@ SKILL_PAIRS = {
         "properties": ["radius", "shape"],
         "dataset_prefix": "radius_shape",
     },
+    "position_rotation": {
+        "properties": ["position", "rotation"],
+        "dataset_prefix": "position_rotation",
+    },
 }

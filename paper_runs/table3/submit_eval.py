@@ -52,6 +52,7 @@ export TORCH_USE_CUDA_DSA=1
 
 cd {repo_root}
 {VGL_CONDA_ACTIVATE}
+{env_exports}
 
 python paper_runs/table3/evaluate_table3.py {command}
 """
@@ -120,7 +121,8 @@ def render_slurm_script(pair_name, coverage, seed, args):
     stderr_path = args.log_root / f"{job_name}-%j.err"
     command = " ".join(build_command(pair_name, coverage, seed, args))
     time_limit = TIME_LIMITS.get(pair_name, "16:00:00")
-    return SBATCH_TEMPLATE.format(
+    env_exports = '\n'.join('export ' + e for e in getattr(args, 'env', []))
+    return SBATCH_TEMPLATE.format(env_exports=env_exports,
         job_name=job_name,
         time_limit=time_limit,
         stdout_path=stdout_path,
@@ -147,6 +149,7 @@ def main():
         help="Optional Slurm dependency in pair:coverage:seed:jobid format.",
     )
     parser.add_argument("--allow-missing-checkpoints", action="store_true")
+    parser.add_argument("--env", action="append", default=[], help="KEY=VALUE exported inside the job script")
     parser.add_argument("--submit", action="store_true")
     args = parser.parse_args()
 
