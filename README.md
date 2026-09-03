@@ -178,8 +178,7 @@ Point `manifest.py` at your own storage before submitting — the paths there ar
 
 ## Datasets
 
-All datasets are synthetic, generated deterministically from a fixed seed, so they can be rebuilt
-rather than downloaded:
+All datasets are synthetic, generated deterministically from a fixed seed, so they can be rebuilt:
 
 ```bash
 python paper_runs/table2/generate_canonical_datasets.py --skills size position rotation count
