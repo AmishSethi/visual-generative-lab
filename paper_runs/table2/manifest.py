@@ -151,6 +151,7 @@ SKILLS = {
         "dropout_flag": "count-dropout-prob",
         "null_args": ["--null-count", "0.0", "--null-embedding-type", "none"],
         "max_samples_flag": "max-samples-per-class",
+        "epochs": 3000,            # count is still improving at the 1000 epochs the other skills use
     },
 }
 
@@ -184,7 +185,8 @@ DATASET_SPECS = {
         "total_images": 10000,
         "image_size": 64,
         "counts": list(range(2, 8)),
-        "circle_radius": 8,
+        "circle_radius": 4,
+        "lattice_gap": 8,          # circles sit on a 16-px lattice (2 * radius + gap), 8 px of clearance
         "seed": DATASET_SEED,
     },
 }

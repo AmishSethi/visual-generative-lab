@@ -120,34 +120,22 @@ def render_arrow(angle_degrees, image_size, shape_size, fill_rgb, background_rgb
     return image.resize((image_size, image_size), Image.Resampling.LANCZOS)
 
 
-def sample_non_overlapping_centers(count, radius, image_size, rng):
-    valid_min = -image_size // 2 + radius
-    valid_max = image_size // 2 - radius
-    min_distance_sq = (2 * (radius + 1)) ** 2
-    max_restarts = 4096
-    max_attempts_per_circle = 4096
-
-    for _ in range(max_restarts):
-        centers = []
-        for _ in range(count):
-            for _ in range(max_attempts_per_circle):
-                candidate = (
-                    int(rng.integers(valid_min, valid_max + 1)),
-                    int(rng.integers(valid_min, valid_max + 1)),
-                )
-                if all(
-                    (candidate[0] - x_coord) ** 2 + (candidate[1] - y_coord) ** 2 >= min_distance_sq
-                    for x_coord, y_coord in centers
-                ):
-                    centers.append(candidate)
-                    break
-            else:
-                break
-        if len(centers) == count:
-            return centers
-
-    raise RuntimeError(f"Could not place {count} circles without overlap.")
-
+def lattice_centers(count, radius, gap, image_size, rng):
+    """Centers of `count` circles on distinct cells of a square lattice with pitch 2 * radius + gap,
+    centered in the frame; coordinates are relative to the image center."""
+    cell = 2 * radius + gap
+    per_axis = image_size // cell
+    if per_axis ** 2 < count:
+        raise RuntimeError(f"lattice holds {per_axis ** 2} cells, need {count}")
+    picks = rng.choice(per_axis ** 2, size=count, replace=False)
+    offset = (image_size - per_axis * cell) / 2.0
+    centers = []
+    for pick in picks:
+        row, col = divmod(int(pick), per_axis)
+        center_x = offset + col * cell + cell / 2.0 - image_size / 2.0
+        center_y = offset + row * cell + cell / 2.0 - image_size / 2.0
+        centers.append((int(round(center_x)), int(round(center_y))))
+    return centers
 
 def position_folder_name(x_coord, y_coord):
     x_str = f"{x_coord:.6f}".rstrip("0").rstrip(".").replace("-", "neg").replace(".", "p")
@@ -268,9 +256,10 @@ def generate_count_dataset(output_dir, spec):
         for sample_idx in range(class_counts[count]):
             image = Image.new("RGB", (spec["image_size"], spec["image_size"]), background_color(rng))
             draw = ImageDraw.Draw(image)
-            centers = sample_non_overlapping_centers(
+            centers = lattice_centers(
                 count=count,
                 radius=spec["circle_radius"],
+                gap=spec["lattice_gap"],
                 image_size=spec["image_size"],
                 rng=rng,
             )

@@ -111,7 +111,7 @@ def build_command(skill, variant, seed):
         "--results-dir",
         str(results_dir),
         "--epochs",
-        "1000",
+        str(skill_spec.get("epochs", 1000)),
         "--global-batch-size",
         "128",
         "--num-workers",

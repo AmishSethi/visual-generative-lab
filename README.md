@@ -64,9 +64,8 @@ Reproduce this table with [`paper_runs/table2/`](paper_runs/table2) — see
   which no integer object count can match, so the split is omitted rather than reported as 0.
 - **Count baseline extrapolation is bimodal** across seeds (0.0, 32.5, 71.2), so its standard
   deviation exceeds its mean.
-- **Count uses a different object layout and schedule** from the other three skills (16-px lattice,
-  3000 epochs vs 1000). Both are necessary for count to fit its training support; see
-  [Count dataset geometry](#count-dataset-geometry).
+- **Count trains for 3000 epochs**, the other skills for 1000: count is the one skill still improving
+  at 1000 epochs, and its loss does not show it (see [Count dataset](#count-dataset)).
 
 </details>
 
@@ -178,9 +177,7 @@ that is the **paper-locked evaluator** — the code that produced the published 
 
 ```bash
 # Table 2: single-skill generalization, all skills x all variants x 3 seeds
-python -m paper_runs.table2.submit_training --skills size position rotation --seeds 0 1 2
-python -m paper_runs.rebuttal.submit_count_column --variant grid_r4 --epochs 3000 --seeds 0 1 2   # count: train
-python -m paper_runs.rebuttal.eval_count_column --geometry grid_r4 --seeds 0 1 2                    # count: evaluate
+python -m paper_runs.table2.submit_training --skills size position rotation count --seeds 0 1 2
 python -m paper_runs.table2.evaluate_table2 --skill size --variant baseline --seed 0
 python -m paper_runs.table2.aggregate_table2
 
@@ -194,26 +191,20 @@ with different settings will produce different numbers.
 
 Point `manifest.py` at your own storage before submitting — the paths there are the ones we used.
 
-### Count dataset geometry
+### Count dataset
 
-Count is the one skill whose dataset differs from the naive construction, and the reason is worth
-knowing if you build on this code. Our first count dataset placed radius-8 circles at random
-non-overlapping positions on a 64×64 canvas. At n=7 that is near the geometric limit of the frame:
-seven discs of radius 8 need centers ≥ 18 px apart inside a 48×48 region that holds at most twelve
-such centers, so seven discs fill more than half of the admissible positions. Admissible layouts are nearly crystalline, small placement errors merge
-objects, and the watershed counter can only read 93.8% of *ground-truth* renders.
-
-The released dataset uses radius-4 circles on a 16-px lattice (8 px clearance), where the counter
-reads 99.9% of ground truth. Combined with a 3000-epoch schedule, the baseline reaches 99.7%
-training accuracy, up from 51.8%.
-
-Build it with `python -m paper_runs.rebuttal.count_variants --variants grid_r4`.
-`generate_canonical_datasets.py` still emits the radius-8 packed layout; it is kept only so the
-initial count row in Appendix A.2 can be reproduced.
+Count places radius-4 circles on distinct cells of a 16-px lattice (8 px of clearance between
+neighbors), so the model chooses which cells to fill rather than where to put anything, and the
+watershed counter reads 99.9% of ground-truth renders. Count is also the one skill still improving at
+the 1000-epoch schedule the other skills use, while its training loss stays flat, so it trains for
+3000 epochs (set per skill in `paper_runs/table2/manifest.py`); the DiT-S/2 baseline then reaches
+99.7% training accuracy. `paper_runs/rebuttal/count_saturation.py` reads the saturation point off
+intermediate checkpoints.
 
 **If you change the count geometry, re-measure the evaluator ceiling on ground truth before trusting
-any model accuracy.** An intermediate lattice variant with only 2 px of clearance dropped the ceiling
-to 29–52%, and any accuracy measured on it would have been a property of the metric, not the model.
+any model accuracy** (`paper_runs/rebuttal/counter_crossval.py`): with too little clearance the
+counter merges neighbors, and any accuracy measured on such renders is a property of the metric, not
+the model.
 
 ---
 
@@ -223,8 +214,7 @@ All datasets are synthetic, generated deterministically from a fixed seed, so th
 rather than downloaded:
 
 ```bash
-python paper_runs/table2/generate_canonical_datasets.py --skills size position rotation
-python -m paper_runs.rebuttal.count_variants --variants grid_r4   # count: radius-4 lattice
+python paper_runs/table2/generate_canonical_datasets.py --skills size position rotation count
 ```
 
 Datasets are `ImageFolder`-structured with the skill value encoded in the directory name.

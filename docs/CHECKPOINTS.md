@@ -40,8 +40,8 @@ weights, which is what the paper reports.
 | + U-Net (capacity-matched) | `unet` | 22.96M params vs DiT-S/2's 22.20M |
 | + DiT-L (capacity scaling) | `dit_large` | ~306M params |
 
-Count checkpoints are trained for 3000 epochs on the lattice geometry; every other skill uses 1000
-epochs. See the README section on count dataset geometry.
+Count checkpoints are trained for 3000 epochs; every other skill uses 1000. See the README section
+"Count dataset".
 
 ## Loading a checkpoint
 

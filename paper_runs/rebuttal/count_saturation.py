@@ -1,14 +1,11 @@
 #!/usr/bin/env python
-"""Is count training saturated at 1000 epochs, or would more steps help?
+"""Count training accuracy as a function of training steps.
 
-Training loss is not a usable proxy here.  On the paper's geometry the loss was
-flat at ~0.017 from epoch 1000 onward, yet tripling the schedule moved count
-accuracy from 51.8 to 76.7.  The diffusion objective is dominated by high-noise
-timesteps and says little about whether the sample has the right number of
-objects.  So measure accuracy directly against step count.
+Training loss is not a usable convergence signal for count: it stays flat while accuracy is still
+rising. This scores intermediate checkpoints of a count run with the paper-locked evaluator so the
+saturation point can be read off directly.
 
-Scores intermediate checkpoints of one run with the paper-locked evaluator, on
-the train split only (the question is about fitting, and it keeps the sweep cheap).
+    python -m paper_runs.rebuttal.count_saturation --variant baseline --seed 0 --steps-list 20000 50000 78000
 """
 import argparse
 import json
@@ -43,11 +40,7 @@ class EvalArgs:
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--variant", default="grid_r4",
-                    help="results directory under results/count_variants/")
-    ap.add_argument("--dataset", default=None,
-                    help="dataset directory, if it differs from --variant "
-                         "(e.g. a longer-schedule run trained on the same data)")
+    ap.add_argument("--variant", default="baseline", help="Table 2 variant of the count run")
     ap.add_argument("--seed", type=int, default=0)
     ap.add_argument("--steps-list", nargs="+", type=int,
                     default=[20000, 35000, 50000, 65000, 78000])
@@ -59,14 +52,9 @@ def main():
     import paper_runs.table2.evaluate_table2 as t2
     from paper_runs.rebuttal import subsample
     subsample.install(t2)
-    t2.RESULTS_ROOT = REB / "results" / "count_variants"
-
-    data = REB / "datasets" / "count_variants" / (a.dataset or a.variant)
-    meta = json.loads((data / "dataset_metadata.json").read_text())
-    t2.load_dataset_metadata = lambda skill, _m=meta: _m
 
     try:
-        base = t2.latest_finished_run(a.variant, "", a.seed)
+        base = t2.latest_finished_run("count", a.variant, a.seed)
         ckpt_dir = base.checkpoint.parent
     except FileNotFoundError:
         # The run is still training, so there is no final_*.pt yet.  Score the

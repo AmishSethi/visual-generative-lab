@@ -44,7 +44,6 @@ FAMILIES = {
     "hires128-rotation":  ("hires128/rotation",   REB/"datasets/hires128/rotation","rotation", "extra"),
     "textcond-size":      ("text_cond/size",      T2/"datasets/size",              "size",     "interp"),
     "textcond-rotation":  ("text_cond/rotation",  T2/"datasets/rotation",          "rotation", "extra"),
-    "countvar-grid_r4":   ("count_variants/grid_r4", REB/"datasets/count_variants/grid_r4", "count", "train"),
 }
 
 
