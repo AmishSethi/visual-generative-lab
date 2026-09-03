@@ -54,9 +54,6 @@ Every skill reaches ~100% on its training support and drops sharply outside it. 
 Reproduce this table with [`paper_runs/table2/`](paper_runs/table2) — see
 [Reproducing paper results](#reproducing-paper-results).
 
-<details>
-
----
 
 ## Setup
 
