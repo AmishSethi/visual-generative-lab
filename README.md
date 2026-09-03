@@ -55,19 +55,6 @@ Reproduce this table with [`paper_runs/table2/`](paper_runs/table2) — see
 [Reproducing paper results](#reproducing-paper-results).
 
 <details>
-<summary><b>Notes on specific cells</b></summary>
-
-- **Rotation baseline** is trimodal across ten seeds: four extrapolate cleanly (< 2° mean error),
-  three are middling (7–16°), three collapse at the 0°/360° wraparound. The mean of 68.0 hides this;
-  see `paper_runs/table2/` and the paper's Appendix B.
-- **Count interpolation is undefined, not zero.** Interpolation queries are midpoints such as 2.5,
-  which no integer object count can match, so the split is omitted rather than reported as 0.
-- **Count baseline extrapolation is bimodal** across seeds (0.0, 32.5, 71.2), so its standard
-  deviation exceeds its mean.
-- **Count trains for 3000 epochs**, the other skills for 1000: count is the one skill still improving
-  at 1000 epochs, and its loss does not show it (see [Count dataset](#count-dataset)).
-
-</details>
 
 ---
 
@@ -187,26 +174,8 @@ python -m paper_runs.table2.aggregate_table2
 python -m paper_runs.table3.submit_training
 ```
 
-Prefer `paper_runs/*/evaluate_*.py` over the raw `scripts/eval_*.py`: the wrappers pin the query
-grids, thresholds, sample counts and sampler settings used in the paper. Calling the raw evaluators
-with different settings will produce different numbers.
-
 Point `manifest.py` at your own storage before submitting — the paths there are the ones we used.
 
-### Count dataset
-
-Count places radius-4 circles on distinct cells of a 16-px lattice (8 px of clearance between
-neighbors), so the model chooses which cells to fill rather than where to put anything, and the
-watershed counter reads 99.9% of ground-truth renders. Count is also the one skill still improving at
-the 1000-epoch schedule the other skills use, while its training loss stays flat, so it trains for
-3000 epochs (set per skill in `paper_runs/table2/manifest.py`); the DiT-S/2 baseline then reaches
-99.7% training accuracy. `paper_runs/appendix/count_saturation.py` reads the saturation point off
-intermediate checkpoints.
-
-**If you change the count geometry, re-measure the evaluator ceiling on ground truth before trusting
-any model accuracy** (`paper_runs/appendix/counter_crossval.py`): with too little clearance the
-counter merges neighbors, and any accuracy measured on such renders is a property of the metric, not
-the model.
 
 ---
 
@@ -220,17 +189,6 @@ python paper_runs/table2/generate_canonical_datasets.py --skills size position r
 ```
 
 Datasets are `ImageFolder`-structured with the skill value encoded in the directory name.
-
-For compositional datasets the sampler guarantees that every in-range value of every skill
-appears in at least one training combination; otherwise a held-out combination tests an unseen value
-rather than an unseen pairing. The sampler that produced the submitted Table 3 datasets guaranteed
-this only for shape and color: audited on whole values (a position is an (x, y) pair), 7 of the 21
-two-skill datasets violated it, all at 25% or 50% coverage, and so did the 25% datasets of the
-fixed-budget color+shape sweep (`scripts/generate_color_shape_dataset.py`, which now repairs by
-swapping combinations so the coverage is unchanged). `paper_runs/table3/audit_compositional.py`
-reports this for any dataset root and exits with the number of violating datasets; the clean datasets
-regenerate identically. Training
-domains and extrapolation values:
 
 | skill | type | training domain | extrapolation values |
 |---|---|---|---|
@@ -263,16 +221,6 @@ Every metric is rule-based, with no learned components, so scores are reproducib
 | shape | contour-based classification | class match |
 | color | nearest-neighbour in RGB | class match |
 
-We validate every extractor on ground-truth renders before scoring any model, so the ceiling of each
-metric is known. One ceiling is low: the published shape classifier (a template bank at six sizes)
-reads only 32–43% of ground-truth `shape_count` renders, whose objects fall outside that size range,
-so the shape+count cells it produced are bounded by the metric. `vgl/shape_metric_v2.py` matches
-templates of every size in place and reads 93–98% of ground truth on every shape dataset
-(`python -m paper_runs.table3.shape_metric_ceiling DATASET_ROOT`); select it with
-`VGL_SHAPE_METRIC=v2`. The published tables use the original metric. The count metric has its own ceiling on shape+count renders: it misses every two- and
-three-square scene, so its ground-truth ceiling there is 86–100% on training splits and 67–80% on held-out
-combinations (`python -m paper_runs.table3.count_metric_ceiling DATASET_ROOT`). `paper_runs/appendix/counter_crossval.py` cross-validates the count metric against
-three independent counters.
 
 ---
 
