@@ -161,7 +161,9 @@ scripts/                   training entry points (one per skill)
 paper_runs/              exact code that produced each paper table
   table2/                single-skill generalization (Table 2)
   table3/                compositional generalization (Table 3)
-  rebuttal/              additional experiments added during review
+  appendix/              experiments behind the appendix: data scaling, resolution, token-matched
+                         latent vs pixel, visually complex renders, text conditioning, the
+                         text-to-image probe, coverage vs K, and count-metric cross-validation
 
 tests/                   unit tests
 docs/                    extended documentation
@@ -198,11 +200,11 @@ neighbors), so the model chooses which cells to fill rather than where to put an
 watershed counter reads 99.9% of ground-truth renders. Count is also the one skill still improving at
 the 1000-epoch schedule the other skills use, while its training loss stays flat, so it trains for
 3000 epochs (set per skill in `paper_runs/table2/manifest.py`); the DiT-S/2 baseline then reaches
-99.7% training accuracy. `paper_runs/rebuttal/count_saturation.py` reads the saturation point off
+99.7% training accuracy. `paper_runs/appendix/count_saturation.py` reads the saturation point off
 intermediate checkpoints.
 
 **If you change the count geometry, re-measure the evaluator ceiling on ground truth before trusting
-any model accuracy** (`paper_runs/rebuttal/counter_crossval.py`): with too little clearance the
+any model accuracy** (`paper_runs/appendix/counter_crossval.py`): with too little clearance the
 counter merges neighbors, and any accuracy measured on such renders is a property of the metric, not
 the model.
 
@@ -269,7 +271,7 @@ templates of every size in place and reads 93–98% of ground truth on every sha
 (`python -m paper_runs.table3.shape_metric_ceiling DATASET_ROOT`); select it with
 `VGL_SHAPE_METRIC=v2`. The published tables use the original metric. The count metric has its own ceiling on shape+count renders: it misses every two- and
 three-square scene, so its ground-truth ceiling there is 86–100% on training splits and 67–80% on held-out
-combinations (`python -m paper_runs.table3.count_metric_ceiling DATASET_ROOT`). `paper_runs/rebuttal/counter_crossval.py` cross-validates the count metric against
+combinations (`python -m paper_runs.table3.count_metric_ceiling DATASET_ROOT`). `paper_runs/appendix/counter_crossval.py` cross-validates the count metric against
 three independent counters.
 
 ---
