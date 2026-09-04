@@ -180,6 +180,10 @@ Point `manifest.py` at your own storage before submitting — the paths there ar
 
 All datasets are synthetic, generated deterministically from a fixed seed, so they can be rebuilt:
 
+Compositional pairs that include rotation without shape render an arrow (the same polygon as the
+single-skill rotation set), and the evaluator recentres the object before reading its angle, since the
+rotation detector is not translation invariant (set `VGL_ROTATION_SHAPE=arrow` when evaluating them).
+
 ```bash
 python paper_runs/table2/generate_canonical_datasets.py --skills size position rotation count
 ```
@@ -199,8 +203,15 @@ Datasets are `ImageFolder`-structured with the skill value encoded in the direct
 
 ## Pretrained checkpoints
 
-Checkpoints are not in this repository. See [`docs/CHECKPOINTS.md`](docs/CHECKPOINTS.md) for the
-download location and the mapping from checkpoint to table row.
+The checkpoints behind Table 2 (all skills, all variants, every seed; 128 files, 98 GB) are on the
+Hugging Face Hub at [ASethi04/vgl-checkpoints](https://huggingface.co/ASethi04/vgl-checkpoints), laid out as
+`table2/<skill>/<variant>/seed_<n>/final.pt` with each run's `run_config.json` beside it:
+
+```bash
+huggingface-cli download ASethi04/vgl-checkpoints --include "table2/rotation/baseline/*" --local-dir checkpoints
+```
+
+See [`docs/CHECKPOINTS.md`](docs/CHECKPOINTS.md) for the mapping from checkpoint to table row.
 
 ---
 
