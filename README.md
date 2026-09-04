@@ -180,15 +180,15 @@ Point `manifest.py` at your own storage before submitting — the paths there ar
 
 All datasets are synthetic, generated deterministically from a fixed seed, so they can be rebuilt:
 
-Compositional pairs that include rotation without shape render an arrow (the same polygon as the
-single-skill rotation set), and the evaluator recentres the object before reading its angle, since the
-rotation detector is not translation invariant (set `VGL_ROTATION_SHAPE=arrow` when evaluating them).
-
 ```bash
 python paper_runs/table2/generate_canonical_datasets.py --skills size position rotation count
 ```
 
 Datasets are `ImageFolder`-structured with the skill value encoded in the directory name.
+
+Compositional pairs that include rotation without shape render an arrow (the same polygon as the
+single-skill rotation set), and the evaluator recentres the object before reading its angle, since the
+rotation detector is not translation invariant (set `VGL_ROTATION_SHAPE=arrow` when evaluating them).
 
 | skill | type | training domain | extrapolation values |
 |---|---|---|---|
