@@ -114,6 +114,17 @@ def generate_shape_image(radius, position, shape, color_rgb, image_size=64,
                 points = [rotate_point(px, py, center_x, center_y, angle_rad) for px, py in points]
             draw.polygon(points, fill=color_rgb, outline=color_rgb)
         
+        elif shape == 'arrow':
+            # Same polygon and angle convention as the single-skill rotation dataset
+            # (paper_runs/table2/generate_canonical_datasets.render_arrow), so the paper's
+            # arrow detector reads it; arrow length = 2 * radius (20 px at radius 10).
+            s_ = large_radius * 2.0
+            arrow = [(0.0, -s_ * 0.5), (-s_ * 0.25, -s_ * 0.2), (-s_ * 0.15, -s_ * 0.2), (-s_ * 0.10, s_ * 0.4),
+                     (0.0, s_ * 0.5), (s_ * 0.10, s_ * 0.4), (s_ * 0.15, -s_ * 0.2), (s_ * 0.25, -s_ * 0.2)]
+            a_ = np.radians(-rotation + 90.0); ca_, sa_ = np.cos(a_), np.sin(a_)
+            points = [(center_x + x * ca_ - y * sa_, center_y + x * sa_ + y * ca_) for x, y in arrow]
+            draw.polygon(points, fill=color_rgb, outline=color_rgb)
+
         elif shape == 'diamond':
             points = [
                 (center_x, center_y - large_radius),
@@ -396,7 +407,7 @@ def generate_dataset_split(combinations, include_properties, output_dir, split_n
             
             # Use asymmetric shape when rotation is a property
             if 'rotation' in include_properties and 'shape' not in include_properties:
-                shape = 'triangle'  # Triangle shows rotation clearly
+                shape = 'arrow'  # asymmetric under every rotation; matches the single-skill rotation renders
             
             color = combo_dict.get('color', ('red', (255, 0, 0)))
             
@@ -515,6 +526,7 @@ def generate_compositional_dataset_coverage(output_dir, coverage=0.75, image_siz
         'samples_per_combination': samples_per_combination,
         'image_size': image_size,
         'include_properties': include_properties,
+        'rotation_shape': 'arrow' if ('rotation' in include_properties and 'shape' not in include_properties) else None,
         'property_ranges': property_values,
         'splits': {name: len(combos) for name, combos in splits.items() if name != '_metadata'},
         'total_combinations': sum(len(combos) for name, combos in splits.items() if name != '_metadata'),

@@ -5,13 +5,14 @@ scratch with the commands in the main README; the checkpoints are provided so yo
 
 ## Download
 
-Checkpoints are hosted at: **<add release URL before publishing>**
+Hosted on the Hugging Face Hub: **https://huggingface.co/ASethi04/vgl-checkpoints** (model repo, CC BY-NC 4.0).
 
 ```bash
-# example once the URL is live
-mkdir -p checkpoints && cd checkpoints
-wget <release-url>/vgl-checkpoints-v1.tar.gz
-tar xzf vgl-checkpoints-v1.tar.gz
+pip install -U huggingface_hub
+# one cell of Table 2 (rotation baseline, all ten seeds)
+huggingface-cli download ASethi04/vgl-checkpoints --include "table2/rotation/baseline/*" --local-dir checkpoints
+# everything (98 GB)
+huggingface-cli download ASethi04/vgl-checkpoints --local-dir checkpoints
 ```
 
 ## Layout

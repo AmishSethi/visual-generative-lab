@@ -751,9 +751,24 @@ def evaluate_properties_comprehensive(image, expected_properties, include_proper
             if ROTATION_TEMPLATE_MATCHING_AVAILABLE:
                 # Use the exact calculate_rotation_metrics function from eval_rotation.py
                 # Determine shape type - for rotation experiments, typically use triangle
-                shape_type = 'triangle'  # Default to triangle as it's more reliable
+                shape_type = os.environ.get('VGL_ROTATION_SHAPE', 'triangle')  # 'arrow' for datasets rendered with rotation_shape=arrow
+                # The rotation detector correlates against a full-frame template with the object at the
+                # center, so it is not translation invariant. When rotation is composed with position,
+                # move the object's centroid to the image center before reading the angle; position is
+                # scored separately from the original image.
+                rot_input = image_np
+                if 'position' in include_properties:
+                    gray_ = cv2.cvtColor(image_np, cv2.COLOR_RGB2GRAY)
+                    _, mask_ = cv2.threshold(gray_, 0, 255, cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU)
+                    mom_ = cv2.moments(mask_)
+                    if mom_['m00'] > 0:
+                        cx_, cy_ = mom_['m10'] / mom_['m00'], mom_['m01'] / mom_['m00']
+                        h_, w_ = gray_.shape
+                        M_ = np.float32([[1, 0, w_ / 2.0 - cx_], [0, 1, h_ / 2.0 - cy_]])
+                        bg_ = tuple(int(v) for v in np.median(image_np.reshape(-1, 3), axis=0))
+                        rot_input = cv2.warpAffine(image_np, M_, (w_, h_), flags=cv2.INTER_LINEAR, borderMode=cv2.BORDER_CONSTANT, borderValue=bg_)
                 rotation_metrics = calculate_rotation_metrics(
-                    image_np, expected_rotation, shape_type, image_size=64
+                    rot_input, expected_rotation, shape_type, image_size=64
                 )
                 
                 if rotation_metrics['detection_success']:
