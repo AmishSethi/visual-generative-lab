@@ -1,6 +1,5 @@
 """
 Flow Matching implementation for PyTorch.
-Based on the JAX implementation in dit_flow/flow.py and dit_flow/dit_trainer.py.
 
 This module provides:
 1. Flow matching loss function

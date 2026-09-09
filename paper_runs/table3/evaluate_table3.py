@@ -3,7 +3,7 @@
 Paper-locked Table 3 evaluator.
 
 For each (pair, coverage, seed) tuple, loads the trained compositional model
-and evaluates it on the test set using scripts/eval_compositional.py's machinery.
+and evaluates it on the test set using vgl/eval_compositional.py's machinery.
 Outputs a results.json with per-category, per-skill accuracies.
 """
 from __future__ import annotations

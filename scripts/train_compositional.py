@@ -61,7 +61,6 @@ from datetime import datetime
 
 # Import compositional models
 from vgl.models_compositional import DiT_models_compositional as DiT_models
-from vgl.unet_models_song_compositional import CompositionalSongUNet_models as SongUNet_models
 from vgl.diffusion import create_diffusion
 # NEW: Import flow matching utilities
 from vgl.flow_matching import create_loss_function, add_flow_matching_args
@@ -432,36 +431,15 @@ def main(args):
             num_colors=args.num_colors,
             active_properties=args.include_properties  # Pass active properties to model
         )
-    elif args.architecture == "songunet":
-        model = SongUNet_models[args.model](
-            img_resolution=input_size,
-            in_channels=in_channels,
-            out_channels=in_channels,  # SongUNet doesn't learn sigma by default
-            active_properties=args.include_properties,
-            conditioning_method=args.conditioning_method,
-            radius_embedding_type=args.radius_embedding_type,
-            position_embedding_type=args.position_embedding_type,
-            property_dropout_prob=args.property_dropout_prob,
-            num_shapes=args.num_shapes,
-            num_colors=args.num_colors,
-        )
     else:
         raise ValueError(f"Unknown architecture: {args.architecture}")
     
     ema = deepcopy(model).to(device)
     requires_grad(ema, False)
-    # Use find_unused_parameters=True for SongUNet to avoid DDP errors
-    if args.architecture == "songunet":
-        model = DDP(model.to(device), device_ids=[rank], find_unused_parameters=True)
-    else:
-        model = DDP(model.to(device), device_ids=[rank], find_unused_parameters=False)
+    model = DDP(model.to(device), device_ids=[rank], find_unused_parameters=False)
     # Create loss function (either diffusion or flow matching)
-    if args.architecture == "songunet":
-        # SongUNet doesn't learn sigma by default
-        loss_fn = create_loss_function(args, timestep_respacing="", learn_sigma=False)
-    else:
-        # DiT and UNet models learn sigma
-        loss_fn = create_loss_function(args, timestep_respacing="", learn_sigma=True)
+    # DiT and UNet models learn sigma
+    loss_fn = create_loss_function(args, timestep_respacing="", learn_sigma=True)
     
     # Log which objective we're using
     objective_type = "Flow Matching" if getattr(args, 'use_flow_matching', False) else "Diffusion"
@@ -692,8 +670,8 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--data-path", type=str, required=True)
     parser.add_argument("--results-dir", type=str, default="results_compositional")
-    parser.add_argument("--model", type=str, choices=list(DiT_models.keys()) + list(SongUNet_models.keys()), default="DiT-S/2")
-    parser.add_argument("--architecture", type=str, choices=["dit", "songunet"], default="dit", help="Model architecture to use")
+    parser.add_argument("--model", type=str, choices=list(DiT_models.keys()), default="DiT-S/2")
+    parser.add_argument("--architecture", type=str, choices=["dit"], default="dit", help="Model architecture to use")
     parser.add_argument("--image-size", type=int, choices=[64, 128, 256, 512], default=64)
     parser.add_argument("--epochs", type=int, default=1000)
     parser.add_argument("--global-batch-size", type=int, default=64)

@@ -19,7 +19,8 @@ huggingface-cli download ASethi04/vgl-checkpoints --local-dir checkpoints
 
 ```
 checkpoints/
-  {skill}/{variant}/seed_{n}/final_{step}.pt
+  table2/{skill}/{variant}/seed_{n}/final.pt
+  table2/{skill}/{variant}/seed_{n}/run_config.json
 ```
 
 `skill` ∈ {size, position, rotation, count}; `variant` is a row of the results table
@@ -38,11 +39,10 @@ weights, which is what the paper reports.
 | + AdaLN | `adaln` | AdaLN-Zero instead of concatenation |
 | + VAE latent | `vae` | `--use-latent-diffusion` |
 | + flow matching | `flow` | `--use-flow-matching` |
-| + U-Net (capacity-matched) | `unet` | 22.96M params vs DiT-S/2's 22.20M |
+| + U-Net (capacity-matched) | `unet` | 22.35M to 22.96M params for size, position, and rotation, 24.89M for count, vs DiT-S/2's 22.20M |
 | + DiT-L (capacity scaling) | `dit_large` | ~306M params |
 
-Count checkpoints are trained for 3000 epochs; every other skill uses 1000. See the README section
-"Count dataset".
+Count checkpoints are trained for 3000 epochs; every other skill uses 1000.
 
 ## Loading a checkpoint
 
@@ -50,7 +50,7 @@ Count checkpoints are trained for 3000 epochs; every other skill uses 1000. See 
 import torch
 from vgl.models import DiT_models_continuous
 
-ckpt = torch.load("checkpoints/size/baseline/seed_0/final_0078000.pt", map_location="cpu")
+ckpt = torch.load("checkpoints/table2/size/baseline/seed_0/final.pt", map_location="cpu")
 model = DiT_models_continuous["DiT-S/2"](
     input_size=64, in_channels=3,
     radius_embedding_type="linear", conditioning_method="concat")

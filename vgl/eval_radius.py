@@ -21,7 +21,6 @@ from pathlib import Path
 # Import model components
 from vgl.models import DiT_models_continuous as DiT_models
 from vgl.unet_models import UNet_models
-from vgl.unet_models_song import SongUNet_models
 from vgl.diffusion import create_diffusion
 from diffusers.models import AutoencoderKL
 from vgl.flow_matching import FlowMatching
@@ -39,9 +38,9 @@ def parse_checkpoint_path(ckpt_path):
     path_parts = Path(ckpt_path).parts
     folder_name = None
     
-    # First try to find 'circle_model' or 'songunet' (old structure)
+    # First try to find 'circle_model' (old structure)
     for part in path_parts:
-        if 'circle_model' in part or 'songunet' in part.lower():
+        if 'circle_model' in part:
             folder_name = part
             break
     
@@ -166,18 +165,8 @@ def parse_checkpoint_path(ckpt_path):
     else:
         config['use_flow_matching'] = False
     
-    # Parse architecture (DiT, UNet, or SongUNet)
-    if 'songunet' in name_lower:
-        config['architecture'] = 'songunet'
-        config['model_name'] = 'SongUNet-S'  # Correct model key for SongUNet
-        # NEW SongUNet models use sinusoidal embedding and adaln conditioning
-        # Override generic parsing unless explicitly specified in folder name
-        if 'linear' not in name_lower and 'sinusoidal' not in name_lower and 'rotary' not in name_lower:
-            config['radius_embedding_type'] = 'sinusoidal'  # NEW models use sinusoidal
-        if 'adaln' not in name_lower and 'concat' not in name_lower:
-            # No explicit conditioning in folder name, use adaln for NEW models
-            config['conditioning_method'] = 'adaln'  # NEW models use adaln
-    elif 'unet' in name_lower:
+    # Parse architecture (DiT or UNet)
+    if 'unet' in name_lower:
         config['architecture'] = 'unet'
     else:
         config['architecture'] = 'dit'
@@ -185,12 +174,6 @@ def parse_checkpoint_path(ckpt_path):
     # Parse model name/size from path components, e.g., "000-DiT-B-2" or "DiT-B2" or "DiT-S/2" or "UNet-S"
     model_name = None
     for part in reversed(path_parts):
-        # Check for SongUNet models
-        m_songunet = re.search(r'SongUNet-([A-Za-z]+)', part)
-        if m_songunet:
-            base = m_songunet.group(1).upper()
-            model_name = f"SongUNet-{base}"
-            break
         # Check for UNet models
         m_unet = re.search(r'UNet-([A-Za-z]+)', part)
         if m_unet:
@@ -212,13 +195,8 @@ def parse_checkpoint_path(ckpt_path):
             break
     if model_name is None:
         full_path_str = str(Path(ckpt_path))
-        # Check for SongUNet in full path
-        m_songunet = re.search(r'SongUNet-([A-Za-z]+)', full_path_str)
-        if m_songunet:
-            base = m_songunet.group(1).upper()
-            model_name = f"SongUNet-{base}"
         # Check for UNet in full path
-        elif m_unet := re.search(r'UNet-([A-Za-z]+)', full_path_str):
+        if m_unet := re.search(r'UNet-([A-Za-z]+)', full_path_str):
             base = m_unet.group(1).upper()
             model_name = f"UNet-{base}"
         else:
@@ -229,9 +207,7 @@ def parse_checkpoint_path(ckpt_path):
                 model_name = f"DiT-{base}/{ds}"
     if model_name is None:
         # Default based on architecture
-        if config['architecture'] == 'songunet':
-            model_name = "SongUNet-S"
-        elif config['architecture'] == 'unet':
+        if config['architecture'] == 'unet':
             model_name = "UNet-S"
         else:
             model_name = "DiT-S/2"
@@ -444,7 +420,6 @@ def load_model(config, device):
     # Determine input size and channels
     input_size = config['image_size']
     in_channels = 3  # Default
-    out_channels = 3  # Default for SongUNet
     
     # Load checkpoint first to check model configuration
     print(f"Loading checkpoint...")
@@ -459,7 +434,7 @@ def load_model(config, device):
     else:
         state_dict = checkpoint
     
-    # Check if this is a VAE model (latent diffusion) - only for DiT/UNet, not SongUNet
+    # Check if this is a VAE model (latent diffusion)
     # Be careful not to match "novae" or "no_vae" (no VAE) - only match "vae" as a standalone word
     folder_lower = config['folder_name'].lower()
     is_vae_model = ('_vae_' in folder_lower or 
@@ -472,7 +447,7 @@ def load_model(config, device):
     if config.get('use_latent_diffusion'):
         is_vae_model = True
 
-    if is_vae_model and config.get('architecture') != 'songunet':
+    if is_vae_model:
         config['use_latent_diffusion'] = True
         print(f"VAE model detected - using latent diffusion")
         # For latent diffusion, we work in 8x8 latent space for 64x64 images
@@ -494,54 +469,6 @@ def load_model(config, device):
             print(f"VAE checkpoint expects {checkpoint_out_features} output features")
             # This affects the patch size calculation for the final layer
     
-    # For SongUNet, detect channels from checkpoint for backwards compatibility
-    elif config.get('architecture') == 'songunet':
-        # Default to 3-channel RGB, but adapt based on checkpoint
-        in_channels = 3
-        out_channels = 3
-        config['use_latent_diffusion'] = False
-        
-        # For SongUNet, check the checkpoint to determine the actual channels used
-        # Look for the first encoder conv layer to determine channels
-        found_channels = False
-        for key in state_dict.keys():
-            if 'enc.' in key and 'conv.weight' in key:
-                checkpoint_channels = state_dict[key].shape[1]
-                print(f"SongUNet checkpoint has {checkpoint_channels} input channels (from {key})")
-                found_channels = True
-                
-                if checkpoint_channels == 3:
-                    print("Using standard 3-channel RGB architecture")
-                    config['use_latent_diffusion'] = False
-                    in_channels = 3
-                    out_channels = 3
-                elif checkpoint_channels > 3:
-                    if is_vae_model:
-                        print(f"Using {checkpoint_channels}-channel VAE latent architecture")
-                        config['use_latent_diffusion'] = True
-                        input_size = input_size // 8
-                        print(f"Adjusted input size for latent diffusion: {input_size}x{input_size}")
-                        in_channels = checkpoint_channels
-                        out_channels = checkpoint_channels
-                    else:
-                        # Extra channels likely come from concat conditioning, not VAE
-                        print(f"Using {checkpoint_channels}-channel concat-conditioned architecture")
-                        config['use_latent_diffusion'] = False
-                        if config.get('conditioning_method') != 'concat':
-                            print("Detected extra input channels; overriding conditioning_method to 'concat'")
-                        config['conditioning_method'] = 'concat'
-                        # For concat, checkpoint channels include +1 conditioning channel
-                        base_channels = checkpoint_channels - 1
-                        in_channels = max(1, base_channels)
-                        out_channels = in_channels
-                break
-        
-        if not found_channels:
-            print(f"SongUNet detected - using default 3-channel RGB architecture")
-        
-        # Store channels in config for later use
-        config['detected_in_channels'] = in_channels
-        config['detected_out_channels'] = out_channels
     else:
         # For DiT/UNet, keep existing logic but also check for channel detection
         for key in state_dict.keys():
@@ -599,32 +526,7 @@ def load_model(config, device):
         print(f"  Input size: {input_size}x{input_size}")
         print(f"  Input channels: {in_channels}")
     
-    if architecture == 'songunet':
-        if model_key not in SongUNet_models:
-            print(f"Warning: model '{model_key}' not found. Falling back to 'SongUNet-S'.")
-            model_key = "SongUNet-S"
-        
-        # SongUNet handles concat conditioning internally, so pass the base input channels
-        print(f"Model initialization: img_resolution={input_size}, in_channels={in_channels}, out_channels={out_channels}, conditioning={config['conditioning_method']}")
-        print(f"DEBUG: About to create SongUNet with in_channels={in_channels}, out_channels={out_channels}")
-        
-        model = SongUNet_models[model_key](
-            img_resolution=input_size,
-            in_channels=in_channels,
-            out_channels=out_channels,  # Use detected output channels
-            conditioning_type='radius',
-            radius_embedding_type=config['radius_embedding_type'],
-            conditioning_method=config['conditioning_method'],
-            radius_dropout_prob=config['radius_dropout_prob'],
-        ).to(device)
-        
-        print(f"DEBUG: Created model, checking actual channels...")
-        # Check what the model actually has
-        for name, param in model.named_parameters():
-            if 'enc.64x64_conv.weight' in name:
-                print(f"DEBUG: Model {name} shape: {param.shape}")
-                break
-    elif architecture == 'unet':
+    if architecture == 'unet':
         if model_key not in UNet_models:
             print(f"Warning: model '{model_key}' not found. Falling back to 'UNet-S'.")
             model_key = "UNet-S"
@@ -653,29 +555,16 @@ def load_model(config, device):
             radius_text_table=config.get('radius_text_table')
         ).to(device)
     
-    # Load the state dict with appropriate handling for SongUNet
-    if config.get('architecture') == 'songunet':
-        # For SongUNet, load the state dict directly
-        state_dict = checkpoint['ema'] if 'ema' in checkpoint else checkpoint['model']
-        
-        # Load with strict=False to ignore missing/unexpected keys
-        missing, unexpected = model.load_state_dict(state_dict, strict=False)
-        print("Loaded SongUNet checkpoint")
-        if missing:
-            print(f"Missing keys: {len(missing)} (expected for different architectures)")
-        if unexpected:
-            print(f"Unexpected keys: {len(unexpected)} (expected for different architectures)")
+    # For DiT/UNet, use strict loading
+    if 'ema' in checkpoint:
+        model.load_state_dict(checkpoint['ema'], strict=False)
+        print("Loaded EMA weights")
+    elif 'model' in checkpoint:
+        model.load_state_dict(checkpoint['model'], strict=False)
+        print("Loaded model weights")
     else:
-        # For DiT/UNet, use strict loading
-        if 'ema' in checkpoint:
-            model.load_state_dict(checkpoint['ema'], strict=False)
-            print("Loaded EMA weights")
-        elif 'model' in checkpoint:
-            model.load_state_dict(checkpoint['model'], strict=False)
-            print("Loaded model weights")
-        else:
-            model.load_state_dict(checkpoint, strict=False)
-            print("Loaded weights directly")
+        model.load_state_dict(checkpoint, strict=False)
+        print("Loaded weights directly")
     
     model.eval()
     return model
@@ -729,10 +618,7 @@ def generate_samples(
             current_batch = min(batch_size, num_samples - sample_index)
             
             # Determine input channels
-            if config.get('architecture') == 'songunet':
-                in_channels = config.get('detected_in_channels', 3)
-            else:
-                in_channels = getattr(model, 'in_channels', 3)
+            in_channels = getattr(model, 'in_channels', 3)
             
             # Build deterministic noise batch
             noise_batches = []
@@ -1388,9 +1274,6 @@ def main(args):
     if config.get('use_flow_matching', False):
         print("Using Flow Matching sampler")
         diffusion = FlowMatching(sigma_min=0.0, sigma_data=1.0, use_sigmoid_time=True)
-    elif config.get('architecture') == 'songunet':
-        print("Using Diffusion sampler (SongUNet)")
-        diffusion = create_diffusion(timestep_respacing="", learn_sigma=False)
     else:
         print("Using Diffusion sampler")
         diffusion = create_diffusion(timestep_respacing=str(args.num_sampling_steps))

@@ -7,8 +7,8 @@ from a number-of-unique-combinations effect.  Separating the two needs a
 larger vocabulary, so pentagon, hexagon, star and cross are added.
 
 `render_shape` reproduces `generate_compositional_dataset_coverage.generate_shape_image`
-bit-for-bit on the original four shapes (verified in validate_classifier.py) and
-extends the same drawing conventions to the new four.
+bit-for-bit on the original four shapes and extends the same drawing
+conventions to the new four.
 
 `classify_shape` is the multi-scale template matcher already used by
 eval_compositional.py, generalised over whichever vocabulary is passed in.
@@ -168,7 +168,7 @@ def classify_shape(image_np, vocabulary, image_size=64, sizes=TEMPLATE_SIZES):
     """Multi-scale template matching, sub-pixel centroid-aligned.
 
     Returns (shape, iou).  100% on ground-truth renders for both the 4-shape
-    and 8-shape vocabularies (see validate_classifier.py).
+    and 8-shape vocabularies.
     """
     mask = foreground_mask(image_np)
     if mask.sum() < 10:

@@ -61,7 +61,6 @@ from datetime import datetime
 # Import continuous models
 from vgl.models import DiT_models_continuous as DiT_models
 from vgl.unet_models import UNet_models
-from vgl.unet_models_song import SongUNet_models
 from vgl.diffusion import create_diffusion
 from diffusers.models import AutoencoderKL
 # Import flow matching utilities
@@ -380,37 +379,20 @@ def main(args):
             null_radius=args.null_count,  # Use null_count
             null_embedding_type=args.null_embedding_type
         )
-    elif args.architecture == "songunet":
-        from vgl.unet_models_song import SongUNet_models
-        model = SongUNet_models[args.model](
-            img_resolution=input_size,
-            in_channels=in_channels,
-            out_channels=in_channels,  # SongUNet doesn't learn sigma by default
-            # learn_sigma defaults to False in SongUNet to match original implementation
-            conditioning_type='radius',  # We reuse the radius conditioning for counts
-            radius_embedding_type=args.count_embedding_type,
-            conditioning_method=args.conditioning_method,
-            radius_dropout_prob=args.count_dropout_prob,
-        )
     else:
         raise ValueError(f"Unknown architecture: {args.architecture}")
     # Note that parameter initialization is done within the model constructor
     ema = deepcopy(model).to(device)  # Create an EMA of the model for use after training
     requires_grad(ema, False)
-    # Use find_unused_parameters=True for SongUNet to avoid DDP errors
-    # Also needed for learnable null embedding which isn't used when dropout_prob=0
-    needs_unused = args.architecture == "songunet" or args.null_embedding_type == "learnable"
+    # Use find_unused_parameters=True for learnable null embedding which isn't used when dropout_prob=0
+    needs_unused = args.null_embedding_type == "learnable"
     if needs_unused:
         model = DDP(model.to(device), device_ids=[rank], find_unused_parameters=True)
     else:
         model = DDP(model.to(device), device_ids=[rank])
     # Create loss function (either diffusion or flow matching)
-    if args.architecture == "songunet":
-        # SongUNet doesn't learn sigma by default
-        loss_fn = create_loss_function(args, timestep_respacing="", learn_sigma=False)
-    else:
-        # DiT and UNet models learn sigma
-        loss_fn = create_loss_function(args, timestep_respacing="", learn_sigma=True)
+    # DiT and UNet models learn sigma
+    loss_fn = create_loss_function(args, timestep_respacing="", learn_sigma=True)
     
     # Log which objective we're using
     objective_type = "Flow Matching" if getattr(args, 'use_flow_matching', False) else "Diffusion"
@@ -693,8 +675,8 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--data-path", type=str, required=True)
     parser.add_argument("--results-dir", type=str, default="results")
-    parser.add_argument("--model", type=str, choices=list(DiT_models.keys()) + list(UNet_models.keys()) + list(SongUNet_models.keys()), default="DiT-S/2")
-    parser.add_argument("--architecture", type=str, choices=["dit", "unet", "songunet"], default="dit", help="Model architecture to use")
+    parser.add_argument("--model", type=str, choices=list(DiT_models.keys()) + list(UNet_models.keys()), default="DiT-S/2")
+    parser.add_argument("--architecture", type=str, choices=["dit", "unet"], default="dit", help="Model architecture to use")
     parser.add_argument("--image-size", type=int, choices=[64, 128, 256, 512], default=64)
     parser.add_argument("--num-classes", type=int, default=1000)  # Kept for compatibility but not used
     parser.add_argument("--epochs", type=int, default=1400)
@@ -714,7 +696,7 @@ if __name__ == "__main__":
                         help="Maximum number of samples to use per class (for faster training)")
     # Add parameter to control diffusion mode
     parser.add_argument("--use-latent-diffusion", action="store_true", default=False,
-                        help="Use VAE latent diffusion (default). Use --no-use-latent-diffusion for direct pixel diffusion")
+                        help="Train in the latent space of the pretrained VAE (default: pixel space)")
     parser.add_argument("--radius-text-table", type=str, default=None,
                         help="Path to a precomputed text-embedding table (required for embedding type 'text').")
     parser.add_argument("--count-embedding-type", type=str, choices=["sinusoidal", "rotary", "linear", "single_linear", "raw", "text"], default="sinusoidal",

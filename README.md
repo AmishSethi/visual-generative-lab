@@ -131,13 +131,12 @@ vgl/                       importable library
   models_position.py       DiT for 2D position
   models_rotation.py       DiT for angle conditioning
   models_compositional.py  multi-skill DiT
-  unet_models*.py          U-Net and SongUNet backbones
+  unet_models*.py          U-Net backbones
   diffusion/               DDPM (adapted from OpenAI ADM)
   flow_matching.py         flow-matching objective
   eval_radius.py           size sampler + rule-based metric
   eval_position.py         position sampler + metric
   eval_rotation.py         rotation sampler + metric
-  eval_count.py            count sampler + metric
   reproducibility_utils.py seeding, worker init, run-config logging
 
 scripts/                   training entry points (one per skill)
@@ -147,7 +146,7 @@ paper_runs/              exact code that produced each paper table
   table3/                compositional generalization (Table 3)
   appendix/              experiments behind the appendix: data scaling, resolution, token-matched
                          latent vs pixel, visually complex renders, text conditioning, the
-                         text-to-image probe, coverage vs K, and count-metric cross-validation
+                         text-to-image probe, and coverage vs K
 
 tests/                   unit tests
 docs/                    extended documentation
@@ -158,8 +157,9 @@ docs/                    extended documentation
 ## Reproducing paper results
 
 `paper_runs/` is the reproduction layer. Each subdirectory has a `manifest.py` holding the canonical
-paths and per-skill configuration, a `submit_*.py` that emits SLURM scripts, and an `evaluate_*.py`
-that is the **paper-locked evaluator** — the code that produced the published numbers.
+paths and per-skill configuration, `submit_*.py` scripts that emit SLURM jobs, and the **paper-locked
+evaluators** (`evaluate_table2.py`, `evaluate_table3.py`, and the `eval_*.py` scripts under `appendix/`),
+the code that produced the published numbers.
 
 ```bash
 # Table 2: single-skill generalization, all skills x all variants x 3 seeds
