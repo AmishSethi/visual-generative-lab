@@ -152,6 +152,7 @@ SKILLS = {
         "null_args": ["--null-count", "0.0", "--null-embedding-type", "none"],
         "max_samples_flag": "max-samples-per-class",
         "epochs": 3000,            # count is still improving at the 1000 epochs the other skills use
+        "unet_model": "UNet-M",    # the count U-Net row uses the wider 24.9M-parameter U-Net
     },
 }
 

@@ -125,7 +125,7 @@ def build_command(skill, variant, seed):
         "--architecture",
         variant_spec["architecture"],
         "--model",
-        variant_spec["model"],
+        skill_spec.get("unet_model", variant_spec["model"]) if variant == "unet" else variant_spec["model"],
         "--ckpt-every",
         "2000",
         f"--{skill_spec['embedding_flag']}",

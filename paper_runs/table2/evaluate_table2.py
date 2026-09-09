@@ -277,10 +277,15 @@ def build_common_run_metadata(selection: RunSelection) -> tuple[dict, dict]:
     # Ensure the folder name signals this so the loader uses the correct input size.
     if is_latent and "vae" not in folder_name.lower():
         folder_name = f"vae_{folder_name}"
+    model = run_args["model"]
+    if "count_embedding_type" in run_args and run_args["architecture"] == "unet" and model == "UNet-DiT-S2-matched":
+        # The count U-Net checkpoints were trained where this name resolved to the
+        # 24.9M-parameter network that the release registers as UNet-M.
+        model = "UNet-M"
     return run_args, {
         "folder_name": folder_name,
         "architecture": run_args["architecture"],
-        "model": run_args["model"],
+        "model": model,
         "image_size": run_args["image_size"],
         "conditioning_method": run_args["conditioning_method"],
         "use_flow_matching": run_args.get("use_flow_matching", False),
