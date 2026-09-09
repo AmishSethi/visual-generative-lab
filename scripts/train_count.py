@@ -444,7 +444,10 @@ def main(args):
             ema.load_state_dict(checkpoint["ema"])
             opt.load_state_dict(checkpoint["opt"])
             train_steps = checkpoint.get("train_steps", 0)
-            start_epoch = checkpoint.get("epoch", 0) + 1  # Start from next epoch
+            # The exact epoch/batch position is reconstructed from train_steps once the
+            # loader exists; checkpoints can be written mid-epoch, so adding one here
+            # would skip optimizer steps.
+            start_epoch = checkpoint.get("epoch", 0)
             
             # QUICK FIX: If train_steps is 0, try to extract from filename
             if train_steps == 0:
@@ -458,8 +461,6 @@ def main(args):
                     steps_per_epoch = 62
                     start_epoch = train_steps // steps_per_epoch
                     logger.info(f"Extracted from filename: step {train_steps}, calculated epoch {start_epoch}")
-            
-            start_epoch = start_epoch + 1  # Start from next epoch
             
             logger.info(f"Resumed from epoch {start_epoch}, step {train_steps}")
         else:
@@ -515,6 +516,15 @@ def main(args):
     else:
         logger.info("Training on all available classes")
 
+    resume_batch_offset = 0
+    if train_steps > 0:
+        steps_per_epoch = len(loader)
+        start_epoch, resume_batch_offset = divmod(train_steps, steps_per_epoch)
+        logger.info(
+            f"Exact resume position: epoch {start_epoch}, "
+            f"batch offset {resume_batch_offset}/{steps_per_epoch}, step {train_steps}"
+        )
+
     # Prepare models for training:
     if train_steps == 0:  # Only reset EMA if starting fresh
         update_ema(ema, model.module, decay=0)  # Ensure EMA is initialized with synced weights
@@ -543,6 +553,8 @@ def main(args):
             
             # Rename y to c (count)
             for batch_idx, (x, c) in enumerate(loader):
+                if epoch == start_epoch and batch_idx < resume_batch_offset:
+                    continue
                 if should_stop:
                     logger.info("Stopping training due to signal...")
                     break
