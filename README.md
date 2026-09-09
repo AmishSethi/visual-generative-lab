@@ -246,12 +246,3 @@ Every metric is rule-based, with no learned components, so scores are reproducib
 
 Built on [facebookresearch/DiT](https://github.com/facebookresearch/DiT). The diffusion
 implementation is adapted from [OpenAI's ADM](https://github.com/openai/guided-diffusion).
-
-## License
-
-**[CC BY-NC 4.0](LICENSE)** — free to share and adapt with attribution, **non-commercial use only**.
-
-This repository is a derivative of [DiT](https://github.com/facebookresearch/DiT), which Meta
-released under CC BY-NC 4.0, so it inherits those terms including the non-commercial restriction.
-`vgl/diffusion/` is adapted from [OpenAI ADM](https://github.com/openai/guided-diffusion) and retains
-its original MIT license.
