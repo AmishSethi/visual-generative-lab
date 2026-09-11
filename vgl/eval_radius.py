@@ -538,7 +538,6 @@ def load_model(config, device):
             radius_dropout_prob=config['radius_dropout_prob'],
             null_radius=config['null_radius'],
             null_embedding_type=config['null_embedding_type'],
-            radius_text_table=config.get('radius_text_table')
         ).to(device)
     else:
         if model_key not in DiT_models:

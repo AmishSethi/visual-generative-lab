@@ -44,16 +44,28 @@ weights, which is what the paper reports.
 
 Count checkpoints are trained for 3000 epochs; every other skill uses 1000.
 
+## Evaluating a checkpoint
+
+```bash
+python -m paper_runs.table2.evaluate_table2 --skill size --variant baseline --seed 0 \
+  --checkpoint checkpoints/table2/size/baseline/seed_0/final.pt
+```
+
 ## Loading a checkpoint
 
+The constructor arguments are the training arguments saved beside each checkpoint:
+
 ```python
-import torch
+import json, torch
 from vgl.models import DiT_models_continuous
 
-ckpt = torch.load("checkpoints/table2/size/baseline/seed_0/final.pt", map_location="cpu")
-model = DiT_models_continuous["DiT-S/2"](
-    input_size=64, in_channels=3,
-    radius_embedding_type="linear", conditioning_method="concat")
-model.load_state_dict(ckpt["ema"])   # EMA weights are what the paper evaluates
+run = "checkpoints/table2/size/baseline/seed_0"
+args = json.load(open(f"{run}/run_config.json"))["args"]
+model = DiT_models_continuous[args["model"]](
+    input_size=args["image_size"], in_channels=3,
+    radius_embedding_type=args["radius_embedding_type"],
+    conditioning_method=args["conditioning_method"],
+    null_embedding_type=args["null_embedding_type"])
+model.load_state_dict(torch.load(f"{run}/final.pt", map_location="cpu")["ema"])   # EMA weights are what the paper evaluates
 model.eval()
 ```

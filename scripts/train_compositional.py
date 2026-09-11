@@ -60,6 +60,7 @@ import json
 from datetime import datetime
 
 # Import compositional models
+from vgl.reproducibility_utils import write_run_config
 from vgl.models_compositional import DiT_models_compositional as DiT_models
 from vgl.diffusion import create_diffusion
 # NEW: Import flow matching utilities
@@ -398,6 +399,15 @@ def main(args):
         logger = create_logger(experiment_dir)
         logger.info(f"Experiment directory: {experiment_dir}")
         logger.info(f"Active properties: {args.include_properties}")
+        write_run_config(
+            experiment_dir,
+            args,
+            extra={
+                "rank": rank,
+                "resolved_seed": seed,
+                "world_size": dist.get_world_size(),
+            },
+        )
     else:
         logger = create_logger(None)
         if args.resume_from:

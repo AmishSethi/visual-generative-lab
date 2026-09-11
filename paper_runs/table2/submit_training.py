@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 
 import os as _os
 
@@ -9,7 +10,6 @@ VGL_CONDA_ACTIVATE = _os.environ.get("VGL_CONDA_ACTIVATE", "conda activate vgl")
 # Optional node exclusions for your cluster, e.g. "#SBATCH --exclude=node1,node2"
 VGL_SLURM_EXCLUDE = _os.environ.get("VGL_SLURM_EXCLUDE", "")
 
-#!/usr/bin/env python
 import argparse
 import shlex
 import subprocess

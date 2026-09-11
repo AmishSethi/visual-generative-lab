@@ -40,6 +40,7 @@ TABLE_ROWS = {
     "+ pixel": "baseline",
     "+ flow matching": "flow",
     "+ U-Net (capacity-matched)": "unet",
+    "+ DiT-L (capacity scaling)": "dit_large",
 }
 
 VARIANTS = {

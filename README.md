@@ -62,6 +62,7 @@ git clone https://github.com/AmishSethi/visual-generative-lab.git
 cd visual-generative-lab
 conda env create -f environment.yml
 conda activate vgl
+pip install -e .
 ```
 
 Or with pip (assumes a working PyTorch ≥ 2.0 + CUDA install):
@@ -100,7 +101,7 @@ python -m paper_runs.table2.generate_canonical_datasets --skills size --output-r
 
 # 2. train the baseline (single GPU; use --nproc_per_node=N for more)
 torchrun --standalone --nproc_per_node=1 scripts/train.py \
-  --data-path $T2/datasets/size/train --results-dir $T2/results/size/baseline/seed_0 \
+  --data-path $T2/datasets/size --results-dir $T2/results/size/baseline/seed_0 \
   --model DiT-S/2 --image-size 64 --epochs 1000 --global-batch-size 128 --global-seed 0 \
   --radius-embedding-type linear --conditioning-method concat
 
@@ -108,7 +109,7 @@ torchrun --standalone --nproc_per_node=1 scripts/train.py \
 python -m paper_runs.table2.evaluate_table2 --skill size --variant baseline --seed 0
 ```
 
-On a SLURM cluster, `python -m paper_runs.table2.submit_training --skills size --seeds 0 --submit`
+On a SLURM cluster, `python -m paper_runs.table2.submit_training --skills size --variants baseline --seeds 0 --submit`
 writes and submits the same command.
 
 Each skill has its own training entry point, because the conditioning differs:
@@ -168,10 +169,13 @@ python -m paper_runs.table2.evaluate_table2 --skill size --variant baseline --se
 python -m paper_runs.table2.aggregate_table2
 
 # Table 3: compositional generalization
+python -m paper_runs.table3.generate_datasets
 python -m paper_runs.table3.submit_training
+python -m paper_runs.table3.evaluate_table3 --pair color_shape --coverage 75 --seed 0
+python -m paper_runs.table3.aggregate_table3
 ```
 
-Point `manifest.py` at your own storage before submitting — the paths there are the ones we used.
+Everything is written under `$VGL_ROOT`; each `manifest.py` reads that variable.
 
 
 ---
@@ -209,6 +213,13 @@ Hugging Face Hub at [ASethi04/vgl-checkpoints](https://huggingface.co/ASethi04/v
 
 ```bash
 huggingface-cli download ASethi04/vgl-checkpoints --include "table2/rotation/baseline/*" --local-dir checkpoints
+```
+
+To evaluate a downloaded checkpoint with the paper's protocol, point the evaluator at it:
+
+```bash
+python -m paper_runs.table2.evaluate_table2 --skill rotation --variant baseline --seed 0 \
+  --checkpoint checkpoints/table2/rotation/baseline/seed_0/final.pt
 ```
 
 See [`docs/CHECKPOINTS.md`](docs/CHECKPOINTS.md) for the mapping from checkpoint to table row.

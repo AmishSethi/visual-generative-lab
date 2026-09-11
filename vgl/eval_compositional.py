@@ -44,11 +44,6 @@ import itertools
 
 # Import model and diffusion
 from vgl.models_compositional import DiT_models_compositional as DiT_models
-try:
-    from unet_models_compositional import UNet_models_compositional as UNet_models
-except ImportError:
-    UNet_models = None
-    print("Warning: UNet compositional models not found (unet_models_compositional).")
 
 from vgl.diffusion import create_diffusion
 
@@ -104,20 +99,8 @@ def parse_checkpoint_path(ckpt_path):
         'architecture': 'dit'
     }
     
-    # Check architecture
-    if 'unet' in ckpt_path.lower():
-        config['architecture'] = 'unet'
-        # Parse UNet model size
-        if 'UNet-B' in ckpt_path or 'unet-b' in ckpt_path.lower():
-            config['model_size'] = 'UNet-B'
-        elif 'UNet-L' in ckpt_path or 'unet-l' in ckpt_path.lower():
-            config['model_size'] = 'UNet-L'
-        elif 'UNet-XL' in ckpt_path or 'unet-xl' in ckpt_path.lower():
-            config['model_size'] = 'UNet-XL'
-        else:
-            config['model_size'] = 'UNet-S'
-    else:
-        # Parse DiT model size
+    # Parse DiT model size
+    if True:
         if 'DiT-B-2' in ckpt_path or 'DiT-B/2' in ckpt_path:
             config['model_size'] = 'DiT-B/2'
         elif 'DiT-L-2' in ckpt_path or 'DiT-L/2' in ckpt_path:
@@ -217,36 +200,14 @@ def build_metadata_based_combinations(metadata, include_properties):
 
 
 def load_model(config, device, active_properties):
-    """Load the model from checkpoint (DiT or UNet)."""
-    architecture = config.get('architecture', 'dit')
-    
-    if architecture == 'unet':
-        # Prepare property configs for UNet
-        property_configs = {
-            'radius': {'embedding_type': 'sinusoidal', 'radius_min': 1.0, 'radius_max': 5.0},
-            'position': {'embedding_type': 'sinusoidal', 'max_position_value': 1.0},
-            'rotation': {'embedding_type': 'circular'},
-            'count': {'max_count': 10},
-            'color': {'num_colors': 8},
-            'shape': {'num_shapes': 4},
-        }
-        
-        model = UNet_models[config['model_size']](
-            input_size=64,
-            in_channels=3,
-            active_properties=active_properties,
-            property_configs=property_configs,
-            conditioning_method=config.get('conditioning_method', 'concat'),
-            class_dropout_prob=0.0
-        )
-    else:
-        model = DiT_models[config['model_size']](
-            input_size=64,
-            in_channels=3,
-            conditioning_method=config.get('conditioning_method', 'concat'),
-            property_dropout_prob=0.0,
-            active_properties=active_properties
-        )
+    """Load the model from checkpoint."""
+    model = DiT_models[config['model_size']](
+        input_size=64,
+        in_channels=3,
+        conditioning_method=config.get('conditioning_method', 'concat'),
+        property_dropout_prob=0.0,
+        active_properties=active_properties
+    )
     
     checkpoint = torch.load(config['checkpoint_path'], map_location=device)
     

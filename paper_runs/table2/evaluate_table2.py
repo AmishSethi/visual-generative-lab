@@ -3,7 +3,9 @@ from __future__ import annotations
 
 import argparse
 import json
+import getpass
 import os
+import tempfile
 import sys
 from dataclasses import dataclass
 from datetime import datetime, timezone
@@ -11,7 +13,7 @@ from pathlib import Path
 from typing import Callable
 
 os.environ.setdefault("MPLBACKEND", "Agg")
-os.environ.setdefault("MPLCONFIGDIR", "/tmp/matplotlib")
+os.environ.setdefault("MPLCONFIGDIR", os.path.join(tempfile.gettempdir(), f"matplotlib-{getpass.getuser()}"))
 
 import numpy as np
 import torch
@@ -748,6 +750,8 @@ def main():
     parser.add_argument("--eval-batch-size", type=int, default=8)
     parser.add_argument("--max-conditions-per-split", type=int, default=None)
     parser.add_argument("--output-root", type=Path, default=None)
+    parser.add_argument("--checkpoint", type=Path, default=None,
+                        help="Evaluate this checkpoint (its run_config.json must sit beside it, as in the Hub layout) instead of the latest finished run under RESULTS_ROOT.")
     parser.add_argument(
         "--size-extrap-min",
         type=int,
@@ -778,7 +782,11 @@ def main():
     output_dir = output_root / args.skill / args.variant / f"seed_{args.seed}"
     output_dir.mkdir(parents=True, exist_ok=True)
 
-    selection = latest_finished_run(args.skill, args.variant, args.seed)
+    if args.checkpoint:
+        run_dir = args.checkpoint.resolve().parent
+        selection = RunSelection(run_dir=run_dir, checkpoint=args.checkpoint.resolve(), run_config=load_json(run_dir / "run_config.json"))
+    else:
+        selection = latest_finished_run(args.skill, args.variant, args.seed)
     table_rows = [row for row, mapped_variant in TABLE_ROWS.items() if mapped_variant == args.variant]
 
     result = {
