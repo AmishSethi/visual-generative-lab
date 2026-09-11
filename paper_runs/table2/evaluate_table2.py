@@ -54,8 +54,7 @@ def calculate_rotation_metrics_robust(
     **kwargs,
 ) -> dict:
     """
-    Detect arrow angle using multi-scale template matching — the method
-    that produced the paper's rotation numbers (verified with paper checkpoint).
+    Detect arrow angle using multi-scale template matching.
     """
     from vgl.eval_rotation import extract_arrow_angle_template_matching
 
@@ -79,10 +78,10 @@ def calculate_rotation_metrics_robust(
         "expected_angle": expected_angle,
         "detected_angle": float(detected),
     }
-SIZE_EXTRAP_MAX = 30  # Table 2 protocol (radii 21..30); the base grid used 25
+SIZE_EXTRAP_MAX = 30  # Table 2 protocol (radii 21..30)
 SIZE_EXTRAP_MIN = 1
 POSITION_EXTRAP_MARGIN = 6.0
-POSITION_EXTRAP_MIN_MARGIN = 4.0  # Table 2 protocol (L_inf >= 4 px outside training); the base grid used 0.0
+POSITION_EXTRAP_MIN_MARGIN = 4.0  # Table 2 protocol (L_inf >= 4 px outside training)
 COUNT_EXTRAP_VALUES = (0.0, 1.0, 8.0, 9.0)
 COUNT_MIN_AREA = 30
 
@@ -281,8 +280,7 @@ def build_common_run_metadata(selection: RunSelection) -> tuple[dict, dict]:
         folder_name = f"vae_{folder_name}"
     model = run_args["model"]
     if "count_embedding_type" in run_args and run_args["architecture"] == "unet" and model == "UNet-DiT-S2-matched":
-        # The count U-Net checkpoints were trained where this name resolved to the
-        # 24.9M-parameter network that the release registers as UNet-M.
+        # In the count U-Net checkpoints this name denotes the 24.9M-parameter U-Net registered as UNet-M.
         model = "UNet-M"
     return run_args, {
         "folder_name": folder_name,

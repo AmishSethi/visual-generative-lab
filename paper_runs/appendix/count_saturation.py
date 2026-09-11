@@ -57,9 +57,8 @@ def main():
         base = t2.latest_finished_run("count", a.variant, a.seed)
         ckpt_dir = base.checkpoint.parent
     except FileNotFoundError:
-        # The run is still training, so there is no final_*.pt yet.  Score the
-        # intermediate checkpoints anyway: the point is the shape of the curve,
-        # and waiting for the run to end defeats that.
+        # No final_*.pt means the run has not finished. Score the intermediate
+        # checkpoints anyway; the shape of the curve is what matters.
         seed_root = t2.RESULTS_ROOT / "count" / a.variant / f"seed_{a.seed}"
         runs = [d for d in sorted(seed_root.iterdir())
                 if d.is_dir() and (d / "checkpoints").is_dir()]

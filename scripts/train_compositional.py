@@ -6,10 +6,10 @@
 
 """
 A minimal training script for DiT using PyTorch DDP.
-Modified for compositional conditioning on all 6 properties: radius, position, shape, color, count, rotation.
+Compositional conditioning on radius, position, shape, color, count and rotation.
 """
 import torch
-# the first flag below was False when we tested this script but True makes A100 training a lot faster:
+# Enable TF32 for faster A100 training:
 torch.backends.cuda.matmul.allow_tf32 = True
 torch.backends.cudnn.allow_tf32 = True
 import torch.distributed as dist
@@ -121,9 +121,9 @@ class ImageFolderWithComposition(ImageFolder):
                     'rotation': 0.0 # no rotation
                 }
                 
-                # Detect format: NEW binary format (radius_10_position_0_5) vs OLD format (r6p0_xn5p0_y5p0)
+                # Detect format: property_value (radius_10_position_0_5) vs compact (r6p0_xn5p0_y5p0)
                 if 'radius' in folder_name or 'position' in folder_name or 'shape' in folder_name or 'color' in folder_name or 'count' in folder_name or 'rotation' in folder_name:
-                    # NEW BINARY FORMAT: property_value_property_value
+                    # property_value format
                     # Example: radius_10_position_0_5 or shape_circle_color_red
                     part_idx = 0
                     while part_idx < len(parts):
@@ -154,7 +154,7 @@ class ImageFolderWithComposition(ImageFolder):
                         else:
                             part_idx += 1
                 else:
-                    # OLD FORMAT: r6p0_xn5p0_y5p0_circle_red (backwards compatibility)
+                    # Compact format: r6p0_xn5p0_y5p0_circle_red
                     part_idx = 0
                     
                     # Parse radius (r6p0 -> 6.0, r7p6 -> 7.6)
@@ -203,7 +203,7 @@ class ImageFolderWithComposition(ImageFolder):
                 
                 self.property_mapping[i] = properties
                 
-                # Debug: Print examples of successful parses
+                # Print the first few parsed folders
                 if i < 3:
                     print(f"✓ Parsed folder '{folder_name}': {properties}")
                 

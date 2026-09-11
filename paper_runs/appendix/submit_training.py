@@ -16,11 +16,6 @@ Families:
   ranges        narrower or shifted training supports (manifest.RANGE_SPECS).
   realistic     visually complex renders of the same skill grids.
   text          frozen text-encoder (CLIP) conditioning instead of numeric.
-
-CUDA_LAUNCH_BLOCKING is deliberately NOT set here.  The paper-locked scripts set
-it, which serialises every kernel launch and costs ~5x throughput; it is a
-debugging flag with no effect on numerics.  Seeds 3-9 keep the original template
-so they stay bit-comparable with seeds 0-2; the appendix runs do not need to.
 """
 import argparse
 import shlex

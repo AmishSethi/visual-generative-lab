@@ -13,9 +13,6 @@ at step 20k, dropping to <5 deg at later steps):
 For each new seed in {100..104}:
   1. Stage a COPY of the source checkpoint at
        {RESULTS_ROOT}/rotation/baseline_nz_warmstart/seed_{N}/000-DiT-S-2-rotation/checkpoints/0020000.pt
-     (We copy rather than passing --resume-from at the source path because
-     scripts/train_rotation.py infers experiment_dir from the checkpoint's parent dir
-     -- using the source path directly would write into seed_4's dir.)
   2. Submit a 1-GPU SLURM job that runs scripts/train_rotation.py with
        --resume-from <staged_copy>  --global-seed {N}
      using the same baseline_nz config (linear emb / concat / null=zero).
@@ -24,7 +21,7 @@ For each new seed in {100..104}:
      written to .../checkpoints/final_0078000.pt -- compatible with the
      existing eval pipeline (paper_runs/table2/evaluate_table2.py).
 
-scripts/train_rotation.py resume logic (verified at lines 394-406) loads:
+scripts/train_rotation.py resume logic loads:
     - model state_dict
     - EMA state_dict
     - optimizer state_dict
@@ -32,8 +29,7 @@ scripts/train_rotation.py resume logic (verified at lines 394-406) loads:
     - epoch (= 256, then start_epoch = 257)
 so the warm-start replays the full optimizer-and-EMA state of seed 4 at step
 20k. Only the data-shuffling sampler seed and CUDA RNG state diverge (driven by
---global-seed = 100..104), which is exactly the "fresh downstream randomness"
-the experiment requires.
+--global-seed = 100..104).
 """
 import argparse
 import shlex

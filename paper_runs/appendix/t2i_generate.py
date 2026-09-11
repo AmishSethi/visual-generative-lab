@@ -56,11 +56,8 @@ MODELS = {
         "guidance": 4.5,
         "supports_negative": True,
     },
-    # Not scored.  Every prompt phrasing and sampling setting tried returned a
-    # dense circle texture rather than the requested handful of objects,
-    # including for "one red dot".  That prompt-following failure could not be
-    # separated from the invocation of the checkpoint itself, so no score is
-    # reported for it.  Kept for reference.
+    # Not scored: every prompt tried returned a dense circle texture rather
+    # than discrete objects.  Kept for reference.
     "sana": {
         "repo": "Efficient-Large-Model/Sana_1600M_1024px_diffusers",
         "pipeline": "SanaPipeline",
@@ -99,11 +96,7 @@ MODELS = {
         "guidance": 0.0,
         "supports_negative": False,
     },
-    # 2025 frontier models.  The size result is the one claim that holds across
-    # every model tested, so it is worth testing against the strongest and most
-    # recent systems obtainable without gated access rather than only 2022-24 ones.
-    # FLUX.1-Krea-dev is the FLUX dev lineage without the approval list that
-    # blocks FLUX.1-dev itself.
+    # 2025 FLUX.1 dev lineage.  FLUX.1-dev itself is gated; this one is not.
     "flux_krea": {
         "repo": "black-forest-labs/FLUX.1-Krea-dev",
         "pipeline": "FluxPipeline",
@@ -123,10 +116,7 @@ MODELS = {
         "guidance": 1.0,
         "supports_negative": False,
     },
-    # Not run; configured for reference.  Verified reachable, but at 20B
-    # parameters it is the most expensive entry here and was not scored;
-    # flux_krea serves as the frontier entry instead.  Nothing is known to be
-    # wrong with it.
+    # Not run (20B parameters); configured for reference.
     "qwen_image": {
         "repo": "Qwen/Qwen-Image",
         "pipeline": "QwenImagePipeline",

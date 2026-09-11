@@ -9,7 +9,7 @@ Hosted on the Hugging Face Hub: **https://huggingface.co/ASethi04/vgl-checkpoint
 
 ```bash
 pip install -U huggingface_hub
-# one cell of Table 2 (rotation baseline, all ten seeds)
+# one cell of Table 2 (rotation baseline, all seeds)
 huggingface-cli download ASethi04/vgl-checkpoints --include "table2/rotation/baseline/*" --local-dir checkpoints
 # everything (98 GB)
 huggingface-cli download ASethi04/vgl-checkpoints --local-dir checkpoints
@@ -26,8 +26,7 @@ checkpoints/
 `skill` ∈ {size, position, rotation, count}; `variant` is a row of the results table
 (`baseline`, `sinusoidal`, `rotary`, `adaln`, `vae`, `flow`, `unet`, `dit_large`).
 
-Each file contains `model`, `ema`, `opt`, `train_steps` and `epoch`. Evaluation uses the **EMA**
-weights, which is what the paper reports.
+Each file contains `model`, `ema`, `opt`, `train_steps` and `epoch`. Evaluation uses the **EMA** weights.
 
 ## Mapping to the results table
 
@@ -39,7 +38,7 @@ weights, which is what the paper reports.
 | + AdaLN | `adaln` | AdaLN-Zero instead of concatenation |
 | + VAE latent | `vae` | `--use-latent-diffusion` |
 | + flow matching | `flow` | `--use-flow-matching` |
-| + U-Net (capacity-matched) | `unet` | 22.35M to 22.96M params for size, position, and rotation, 24.89M for count, vs DiT-S/2's 22.20M |
+| + U-Net (capacity-matched) | `unet` | parameter-matched to DiT-S/2 |
 | + DiT-L (capacity scaling) | `dit_large` | ~306M params |
 
 Count checkpoints are trained for 3000 epochs; every other skill uses 1000.
@@ -66,6 +65,6 @@ model = DiT_models_continuous[args["model"]](
     radius_embedding_type=args["radius_embedding_type"],
     conditioning_method=args["conditioning_method"],
     null_embedding_type=args["null_embedding_type"])
-model.load_state_dict(torch.load(f"{run}/final.pt", map_location="cpu")["ema"])   # EMA weights are what the paper evaluates
+model.load_state_dict(torch.load(f"{run}/final.pt", map_location="cpu")["ema"])
 model.eval()
 ```

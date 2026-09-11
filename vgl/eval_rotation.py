@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 """
 Evaluation script for continuous rotation angle DiT model.
-Fixed with template matching for accurate angle detection.
+Angle detection uses template matching.
 """
 import os
 import torch
@@ -822,8 +822,7 @@ def load_model(config, device):
                    '/vae/' in ckpt_path_lower) and 'novae' not in ckpt_path_lower and 'no_vae' not in ckpt_path_lower
     # The run config records this explicitly and is authoritative; the path
     # heuristic below is only a fallback for older checkpoints whose run_config
-    # predates the flag. Relying on the path alone silently built a pixel-space
-    # model for latent checkpoints under directories like "hires128_vae/".
+    # predates the flag.
     if config.get('use_latent_diffusion'):
         is_vae_model = True
 

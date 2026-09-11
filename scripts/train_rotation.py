@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 """
 A minimal training script for DiT using PyTorch DDP.
-Modified for continuous rotation angle conditioning with checkpoint resuming and signal handling.
+Continuous rotation angle conditioning with checkpoint resuming and signal handling.
 """
 import torch
 torch.backends.cuda.matmul.allow_tf32 = True

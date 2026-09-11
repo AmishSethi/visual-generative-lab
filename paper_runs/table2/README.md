@@ -6,7 +6,7 @@ What it does:
 - generates exact 10k datasets for `size`, `position`, `rotation`, and `count`
 - writes all new datasets, logs, Slurm scripts, and results under `$VGL_ROOT/MORE_SEEDS/table2`
 - uses a single manifest for the baseline and the seven ablations
-- uses parameter-matched U-Nets (`UNet-DiT-S2-matched` for size, position, and rotation; `UNet-M` for count) so the `+ U-Net` row is not dominated by a parameter-count mismatch
+- uses parameter-matched U-Nets (`UNet-DiT-S2-matched` for size, position, and rotation; `UNet-M` for count)
 
 Usage:
 

@@ -6,9 +6,8 @@ backgrounds and occasional drop shadows: the foreground test keys on the
 redness of the requested subject rather than the plain near-white threshold
 VGL uses on its own clean renders.
 
-`--validate` runs the identical scorer over VGL ground-truth renders first.  A
-metric that cannot score its own synthetic data is not evidence about anything,
-so the validation numbers are reported alongside the T2I numbers.
+`--validate` runs the identical scorer over VGL ground-truth renders first; the
+validation numbers are reported alongside the T2I numbers.
 """
 import argparse
 import json

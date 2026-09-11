@@ -1,9 +1,9 @@
 #!/usr/bin/env python
 """
-Enhanced evaluation script for continuous radius DiT model.
+Evaluation script for continuous radius DiT model.
 Automatically infers model parameters from checkpoint path and evaluates 
 interpolation vs extrapolation performance with multiple metrics.
-Now includes proper CFG (Classifier-Free Guidance) support.
+Supports classifier-free guidance (CFG).
 """
 import os
 import re
@@ -34,17 +34,17 @@ VGL_ROOT = _os.environ.get("VGL_ROOT", _os.path.expanduser("~/vgl-data"))
 
 def parse_checkpoint_path(ckpt_path):
     """Parse model configuration from checkpoint path."""
-    # Get the folder name from the path - handle both old and new folder structures
+    # Get the run folder name from the path
     path_parts = Path(ckpt_path).parts
     folder_name = None
     
-    # First try to find 'circle_model' (old structure)
+    # First look for a 'circle_model' folder
     for part in path_parts:
         if 'circle_model' in part:
             folder_name = part
             break
     
-    # If not found, look for ablation folder structure (new structure)
+    # Otherwise look for the ablation folder structure
     if not folder_name:
         for part in path_parts:
             if any(x in part for x in ['radius_', 'position_', 'rotation_']):
@@ -100,7 +100,7 @@ def parse_checkpoint_path(ckpt_path):
         config['radius_dropout_prob'] = 0.1
         config['use_cfg'] = True  # Flag to indicate CFG was used in training
         
-        # UPDATED: Check for null embedding type including "none"
+        # Parse null embedding type from the folder name (none, zero, learnable)
         if 'none' in name_lower or 'no_emb' in name_lower or 'noemb' in name_lower:
             config['null_embedding_type'] = 'none'
         elif 'zero' in name_lower:
@@ -134,7 +134,7 @@ def parse_checkpoint_path(ckpt_path):
             config['train_max_radius'] = int(range_match.group(2))
         else:
             # For new ablation folder structure, use default radius range
-            # Based on the original training data: circle_dataset_16_radii_5to20_64x64_NEW
+            # The paper's training radius range is 5 to 20 px
             print(f"Warning: Could not parse radius range from folder name: {folder_name}")
             print("Using default radius range for ablation experiments: 5 to 20")
             config['train_min_radius'] = 5
@@ -442,8 +442,7 @@ def load_model(config, device):
                    folder_lower.endswith('_vae') or 
                    folder_lower == 'vae') and 'novae' not in folder_lower and 'no_vae' not in folder_lower
     # run_config records this explicitly and is authoritative; the folder-name
-    # heuristic above is a fallback for older checkpoints. Path-only detection
-    # silently builds a pixel model for latent checkpoints in dirs like hires128_vae/.
+    # heuristic above is a fallback for older checkpoints.
     if config.get('use_latent_diffusion'):
         is_vae_model = True
 
@@ -1177,7 +1176,7 @@ def print_results_table_enhanced(summary_train, overall_train, summary_interp, o
     print(f"{'Mean |% Error|':<30} {overall_train['mean_abs_radius_error_percentage']:<20.1f} {overall_interp['mean_abs_radius_error_percentage']:<20.1f} {overall_extrap['mean_abs_radius_error_percentage']:<20.1f}")
 
 def print_results_table(summary_interp, overall_interp, summary_extrap, overall_extrap, cfg_scale=1.0):
-    """Print a comprehensive results table (backward compatibility)."""
+    """Print per-radius results for the interpolation and extrapolation splits."""
     print("\n" + "="*80)
     print("EVALUATION RESULTS")
     if cfg_scale > 1.0:

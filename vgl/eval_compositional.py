@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 Comprehensive evaluation script for compositional generalization experiments.
-Updated to show detected vs ground truth properties in visualizations.
+Visualizations show detected and ground-truth properties.
 """
 
 import argparse
@@ -338,7 +338,7 @@ def load_test_combinations_comprehensive(dataset_path, include_properties, inclu
                         combinations[item].append(combo)
     
     if not combinations:
-        # Fallback: parse directory names directly (legacy datasets)
+        # Fallback: parse directory names directly
         direct_combos = []
         for item in os.listdir(dataset_path):
             item_path = os.path.join(dataset_path, item)
@@ -446,7 +446,6 @@ def evaluate_properties_comprehensive(image, expected_properties, include_proper
     gray = cv2.cvtColor(image_np, cv2.COLOR_RGB2GRAY)
     
     # Use Otsu thresholding on grayscale - adapts to each image's actual foreground/background
-    # This handles noisy backgrounds in canonical datasets better than fixed RGB distance.
     _, binary = cv2.threshold(gray, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
     # Invert if foreground got classified as white (we want object=white)
     if np.mean(binary) > 127:

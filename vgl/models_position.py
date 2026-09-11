@@ -1,7 +1,6 @@
 # models_position.py
 """
-Modified DiT model with continuous position (x,y) conditioning.
-Fixed to handle models trained without dropout (no CFG).
+DiT model with continuous position (x,y) conditioning.
 """
 
 import torch
@@ -52,8 +51,7 @@ class TimestepEmbedder(nn.Module):
 class RadiusEmbedder(nn.Module):
     """
     Embeds radius values into vector representations. Also handles radius dropout for classifier-free guidance.
-    This is the original embedder from models.py, used for individual coordinate embedding.
-    Fixed to handle models without dropout properly.
+    Used to embed each position coordinate individually.
     """
     def __init__(self, hidden_size, frequency_embedding_size=256, embedding_type="sinusoidal", 
                  max_period=10000, dropout_prob=0.0, null_radius=0.0, 

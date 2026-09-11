@@ -7,11 +7,8 @@ The appendix results tree is laid out as
     RESULTS_ROOT/scaling/{skill}/{10k,20k,40k,80k}/seed_N/<run>/checkpoints/
 which is exactly the shape `evaluate_table2.latest_finished_run` expects once
 its RESULTS_ROOT is repointed, with the dataset-size tag playing the role of
-"variant".  Repointing rather than reimplementing means the scaling curve is
-measured by the same code that produced the paper's Table 1 numbers -- the
-train/interp/extra query grids still come from the canonical table2 dataset
-metadata, so every point on the curve is evaluated on identical conditions and
-only the training-set size differs.
+"variant".  The train/interp/extra query grids come from the canonical
+table2 dataset metadata, so only the training-set size differs.
 """
 import argparse
 import json
@@ -56,8 +53,7 @@ def main():
     parser.add_argument("--out", type=Path, default=EVAL_ROOT / "scaling_results.json")
     args = parser.parse_args()
 
-    # Position queries are generated as nested x,y loops, so the evaluator's
-    # prefix truncation would sample only the left-hand columns of the canvas.
+    # Subsample position queries evenly (see subsample.py).
     subsample.install(t2)
 
     # Repoint checkpoint discovery at the appendix tree; dataset metadata (and

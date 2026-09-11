@@ -6,10 +6,10 @@
 
 """
 A minimal training script for DiT using PyTorch DDP.
-Modified for continuous radius conditioning with checkpoint resuming and signal handling.
+Supports continuous radius conditioning, checkpoint resuming, and signal handling.
 """
 import torch
-# the first flag below was False when we tested this script but True makes A100 training a lot faster:
+# TF32 makes A100 training a lot faster:
 torch.backends.cuda.matmul.allow_tf32 = True
 torch.backends.cudnn.allow_tf32 = True
 import torch.distributed as dist
@@ -45,7 +45,7 @@ for _name in ("all_reduce", "all_gather", "reduce_scatter"):
     if hasattr(dist, _name):
         setattr(dist, _name, _wrap_collective(getattr(dist, _name)))
 from torch.nn.parallel import DistributedDataParallel as DDP
-from torch.utils.data import DataLoader, Dataset  # Added Dataset import
+from torch.utils.data import DataLoader, Dataset
 from torch.utils.data.distributed import DistributedSampler
 from torchvision.datasets import ImageFolder
 from torchvision import transforms
@@ -98,7 +98,6 @@ signal.signal(signal.SIGTERM, signal_handler)  # Termination
 signal.signal(signal.SIGHUP, signal_handler)   # Hangup (terminal disconnect)
 
 
-# CHANGE 2: Add a simple wrapper to convert ImageFolder labels to radius values
 class ImageFolderWithRadius(ImageFolder):
     """Wrapper around ImageFolder that converts class indices to radius values."""
     def __init__(self, root, transform=None, radius_mapping=None, selected_classes=None, max_samples_per_class=None):
@@ -188,7 +187,6 @@ def update_ema(ema_model, model, decay=0.9999):
     model_params = OrderedDict(model.named_parameters())
 
     for name, param in model_params.items():
-        # TODO: Consider applying only to params that require_grad to avoid small numerical changes of pos_embed
         ema_params[name].mul_(decay).add_(param.data, alpha=1 - decay)
 
 
@@ -433,7 +431,7 @@ def main(args):
             train_steps = checkpoint.get("train_steps", 0)
             start_epoch = checkpoint.get("epoch", 0) + 1  # Start from next epoch
             
-            # QUICK FIX: If train_steps is 0, try to extract from filename
+            # If train_steps is 0, recover it from the checkpoint filename
             if train_steps == 0:
                 import re
                 # Extract step number from filename like "0020000.pt" or "signal_1_0020000.pt"
@@ -459,7 +457,6 @@ def main(args):
         transforms.ToTensor(),
         transforms.Normalize(mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5], inplace=True)
     ])
-    # CHANGE 5: Use ImageFolderWithRadius instead of ImageFolder
     dataset = ImageFolderWithRadius(args.data_path, transform=transform, selected_classes=args.selected_classes, max_samples_per_class=args.max_samples_per_class)
     sampler = DistributedSampler(
         dataset,
@@ -664,7 +661,6 @@ def main(args):
 
 
 if __name__ == "__main__":
-    # Default args here will train DiT-XL/2 with the hyperparameters we used in our paper (except training iters).
     parser = argparse.ArgumentParser()
     parser.add_argument("--data-path", type=str, required=True)
     parser.add_argument("--results-dir", type=str, default="results")

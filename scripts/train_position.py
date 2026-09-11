@@ -6,10 +6,10 @@
 
 """
 A minimal training script for DiT using PyTorch DDP.
-Modified for continuous position (x,y) conditioning with checkpoint resuming and signal handling.
+Supports continuous position (x,y) conditioning, checkpoint resuming, and signal handling.
 """
 import torch
-# the first flag below was False when we tested this script but True makes A100 training a lot faster:
+# TF32 makes A100 training a lot faster:
 torch.backends.cuda.matmul.allow_tf32 = True
 torch.backends.cudnn.allow_tf32 = True
 import torch.distributed as dist
@@ -192,7 +192,6 @@ def update_ema(ema_model, model, decay=0.9999):
     model_params = OrderedDict(model.named_parameters())
 
     for name, param in model_params.items():
-        # TODO: Consider applying only to params that require_grad to avoid small numerical changes of pos_embed
         ema_params[name].mul_(decay).add_(param.data, alpha=1 - decay)
 
 

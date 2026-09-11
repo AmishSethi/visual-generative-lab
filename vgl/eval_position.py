@@ -1,8 +1,8 @@
 #!/usr/bin/env python
 """
-Enhanced evaluation script for continuous position DiT model.
-Now includes nearest training point calculation, improved coordinate debugging,
-and comprehensive visualizations similar to eval_radius.py.
+Evaluation script for the continuous position DiT model.
+Measures position error against the conditioning target, reports the distance
+to the nearest training position, and saves comparison visualizations.
 """
 import os
 import re
@@ -94,17 +94,17 @@ def parse_checkpoint_path(ckpt_path):
     Parse model configuration from checkpoint path.
     Expected folder format: circle_model_position_36_8x8_linear_concat_no_cfg_4workers
     """
-    # Get the folder name from the path - handle both old and new folder structures
+    # Get the run folder name from the path
     path_parts = Path(ckpt_path).parts
     folder_name = None
     
-    # First try to find 'circle_model_position' (old structure)
+    # First try 'circle_model_position' folders
     for part in path_parts:
         if 'circle_model_position' in part.lower():
             folder_name = part
             break
     
-    # If not found, look for ablation folder structure (new structure)
+    # Otherwise look for the ablation folder structure
     if not folder_name:
         for part in path_parts:
             if 'position_' in part:
@@ -906,7 +906,7 @@ def create_metric_heatmaps(results_exact, results_interp, results_extrap, save_p
 
 def save_example_comparisons_enhanced(results, samples_dict, save_path, training_positions, num_examples=3):
     """
-    Save visual comparisons with enhanced debugging information.
+    Save visual comparisons with debugging information.
     """
     os.makedirs(os.path.join(save_path, 'comparisons'), exist_ok=True)
     
@@ -995,7 +995,7 @@ def save_example_comparisons_enhanced(results, samples_dict, save_path, training
 
 def evaluate_position_set_enhanced(position_values, samples_dict, config, training_positions, label="", debug_first=True):
     """
-    Evaluate a set of position values with enhanced metrics.
+    Evaluate a set of position values.
     """
     results = {}
     
@@ -1041,7 +1041,7 @@ def evaluate_position_set_enhanced(position_values, samples_dict, config, traini
 def print_results_table_enhanced(summary_exact, overall_exact, summary_interp, overall_interp, 
                                 summary_extrap, overall_extrap, cfg_scale=1.0):
     """
-    Print enhanced results table with nearest training point info.
+    Print results table with nearest training point info.
     """
     print("\n" + "="*110)
     print("POSITION EVALUATION RESULTS")
@@ -1145,7 +1145,7 @@ def print_results_table_enhanced(summary_exact, overall_exact, summary_interp, o
 
 def calculate_summary_statistics_enhanced(results, label=""):
     """
-    Calculate enhanced summary statistics including nearest training point info.
+    Calculate summary statistics including nearest training point info.
     """
     if not results:
         return {}, {}
@@ -1230,8 +1230,7 @@ def load_model(config, device):
                    '/vae/' in ckpt_path_lower) and 'novae' not in ckpt_path_lower and 'no_vae' not in ckpt_path_lower)
     # The run config records this explicitly and is authoritative; the path
     # heuristic below is only a fallback for older checkpoints whose run_config
-    # predates the flag. Relying on the path alone silently built a pixel-space
-    # model for latent checkpoints under directories like "hires128_vae/".
+    # predates the flag.
     if config.get('use_latent_diffusion'):
         is_vae_model = True
 
@@ -1579,7 +1578,7 @@ def main(args):
     print("\nCreating visualizations...")
     visualize_results(results_exact, results_interp, results_extrap, output_dir, config)
     
-    # Save example comparisons with enhanced visualizations
+    # Save example comparisons
     # Use simple comparison saving
     save_position_comparisons_simple(
         {**results_exact, **results_interp, **results_extrap}, 

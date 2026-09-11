@@ -34,8 +34,8 @@ three splits:
 
 ## Results
 
-Accuracy (%) on the four numeric skills, mean over three seeds (ten for the rotation baseline).
-Thresholds: IoU ≥ 0.90 (size), ≤ 2 px (position), ≤ 5° (rotation), exact match (count).
+Accuracy (%) on the four numeric skills, mean over seeds.
+Thresholds are listed under [Evaluation metrics](#evaluation-metrics).
 
 | Model | size train | size extra | pos train | pos extra | rot train | rot extra | count train | count extra |
 |---|--:|--:|--:|--:|--:|--:|--:|--:|
@@ -190,9 +190,7 @@ python paper_runs/table2/generate_canonical_datasets.py --skills size position r
 
 Datasets are `ImageFolder`-structured with the skill value encoded in the directory name.
 
-Compositional pairs that include rotation without shape render an arrow (the same polygon as the
-single-skill rotation set), and the evaluator recentres the object before reading its angle, since the
-rotation detector is not translation invariant (set `VGL_ROTATION_SHAPE=arrow` when evaluating them).
+Compositional pairs that include rotation without shape render an arrow; set `VGL_ROTATION_SHAPE=arrow` when evaluating them.
 
 | skill | type | training domain | extrapolation values |
 |---|---|---|---|

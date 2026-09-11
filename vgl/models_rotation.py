@@ -1,6 +1,6 @@
 # models_rotation.py
 """
-Modified DiT model with continuous rotation angle conditioning.
+DiT model with continuous rotation angle conditioning.
 Supports rotation angles in degrees [0, 360].
 """
 

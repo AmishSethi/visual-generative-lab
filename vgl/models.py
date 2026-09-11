@@ -1,6 +1,6 @@
 # models.py
 """
-Modified DiT model with continuous radius conditioning.
+DiT model with continuous radius conditioning.
 Supports both AdaLN and in-context (concatenation) conditioning.
 """
 
