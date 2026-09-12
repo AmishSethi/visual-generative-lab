@@ -1,6 +1,6 @@
 """
 UNet-based Diffusion Models with Position Conditioning
-Updated with improved block structure matching DDPM paper implementation
+Block structure follows the DDPM reference implementation.
 """
 
 import torch

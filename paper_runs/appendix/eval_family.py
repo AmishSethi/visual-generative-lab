@@ -84,8 +84,7 @@ def main():
     parser.add_argument("--out", type=Path, default=None)
     args = parser.parse_args()
 
-    # Position queries are generated as nested x,y loops, so the evaluator's
-    # prefix truncation would sample only the left-hand columns of the canvas.
+    # Subsample position queries evenly (see subsample.py).
     subsample.install(t2)
 
     out_path = args.out or EVAL_ROOT / f"{args.family}_results.json"

@@ -80,7 +80,7 @@ TIME_LIMITS = {
     "position": "36:00:00",
 }
 
-# Variants to run for size and position (skip dit_large until seed_2 retrain finishes).
+# Variants to run for size and position.
 SIZE_VARIANTS = ["baseline", "sinusoidal", "rotary", "adaln", "vae", "flow", "unet"]
 POSITION_VARIANTS = ["baseline", "sinusoidal", "rotary", "adaln", "vae", "flow", "unet"]
 

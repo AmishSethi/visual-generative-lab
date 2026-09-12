@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 Comprehensive evaluation script for compositional generalization experiments.
-Updated to show detected vs ground truth properties in visualizations.
+Visualizations show detected and ground-truth properties.
 """
 
 import argparse
@@ -44,17 +44,7 @@ import itertools
 
 # Import model and diffusion
 from vgl.models_compositional import DiT_models_compositional as DiT_models
-try:
-    from unet_models_compositional import UNet_models_compositional as UNet_models
-except ImportError:
-    UNet_models = None
-    print("Warning: UNet compositional models not found (unet_models_compositional).")
 
-# Add SongUNet compositional support
-try:
-    from vgl.unet_models_song_compositional import CompositionalSongUNet_models as SongUNet_models
-except ImportError:
-    SongUNet_models = None
 from vgl.diffusion import create_diffusion
 
 SHAPE_NAME_TO_ID = {'circle': 0, 'square': 1, 'triangle': 2, 'diamond': 3}
@@ -109,23 +99,8 @@ def parse_checkpoint_path(ckpt_path):
         'architecture': 'dit'
     }
     
-    # Check architecture
-    if 'songunet' in ckpt_path.lower() or 'compsongunet' in ckpt_path.lower():
-        config['architecture'] = 'songunet'
-        config['model_size'] = 'CompSongUNet-S'
-    elif 'unet' in ckpt_path.lower():
-        config['architecture'] = 'unet'
-        # Parse UNet model size
-        if 'UNet-B' in ckpt_path or 'unet-b' in ckpt_path.lower():
-            config['model_size'] = 'UNet-B'
-        elif 'UNet-L' in ckpt_path or 'unet-l' in ckpt_path.lower():
-            config['model_size'] = 'UNet-L'
-        elif 'UNet-XL' in ckpt_path or 'unet-xl' in ckpt_path.lower():
-            config['model_size'] = 'UNet-XL'
-        else:
-            config['model_size'] = 'UNet-S'
-    else:
-        # Parse DiT model size
+    # Parse DiT model size
+    if True:
         if 'DiT-B-2' in ckpt_path or 'DiT-B/2' in ckpt_path:
             config['model_size'] = 'DiT-B/2'
         elif 'DiT-L-2' in ckpt_path or 'DiT-L/2' in ckpt_path:
@@ -225,68 +200,14 @@ def build_metadata_based_combinations(metadata, include_properties):
 
 
 def load_model(config, device, active_properties):
-    """Load the model from checkpoint (DiT or UNet)."""
-    architecture = config.get('architecture', 'dit')
-    
-    if architecture == 'songunet':
-        assert SongUNet_models is not None, "SongUNet compositional models not available"
-        # Detect active_properties order from checkpoint if possible
-        checkpoint = torch.load(config['checkpoint_path'], map_location=device)
-        state_dict_ckpt = checkpoint.get('ema') or checkpoint.get('model') or checkpoint
-        detected_props = []
-        if isinstance(state_dict_ckpt, dict):
-            for key in state_dict_ckpt.keys():
-                if key.startswith('property_embedders.') and key.endswith('.weight'):
-                    prop = key.split('.')[1]
-                    if prop not in detected_props:
-                        detected_props.append(prop)
-        if detected_props:
-            if set(detected_props) == set(active_properties):
-                print(f"Using active_properties from checkpoint (preserving order): {detected_props}")
-                active_properties = detected_props
-            else:
-                print(f"Warning: CLI active_properties {active_properties} differ from checkpoint props {detected_props}. Using checkpoint order where possible.")
-                # Keep intersection in checkpoint order; append any extras at end
-                ordered = [p for p in detected_props if p in active_properties]
-                extras = [p for p in active_properties if p not in ordered]
-                active_properties = ordered + extras
-        model = SongUNet_models[config['model_size']](
-            img_resolution=64,
-            in_channels=3,
-            out_channels=3,
-            active_properties=active_properties,
-            conditioning_method=config.get('conditioning_method', 'concat'),
-            property_dropout_prob=0.0,
-            num_shapes=4,
-            num_colors=8,
-        )
-    elif architecture == 'unet':
-        # Prepare property configs for UNet
-        property_configs = {
-            'radius': {'embedding_type': 'sinusoidal', 'radius_min': 1.0, 'radius_max': 5.0},
-            'position': {'embedding_type': 'sinusoidal', 'max_position_value': 1.0},
-            'rotation': {'embedding_type': 'circular'},
-            'count': {'max_count': 10},
-            'color': {'num_colors': 8},
-            'shape': {'num_shapes': 4},
-        }
-        
-        model = UNet_models[config['model_size']](
-            input_size=64,
-            in_channels=3,
-            active_properties=active_properties,
-            property_configs=property_configs,
-            conditioning_method=config.get('conditioning_method', 'concat'),
-            class_dropout_prob=0.0
-        )
-    else:
-        model = DiT_models[config['model_size']](
-            input_size=64,
-            in_channels=3,
-            conditioning_method=config.get('conditioning_method', 'concat'),
-            property_dropout_prob=0.0,
-            active_properties=active_properties
-        )
+    """Load the model from checkpoint."""
+    model = DiT_models[config['model_size']](
+        input_size=64,
+        in_channels=3,
+        conditioning_method=config.get('conditioning_method', 'concat'),
+        property_dropout_prob=0.0,
+        active_properties=active_properties
+    )
     
     checkpoint = torch.load(config['checkpoint_path'], map_location=device)
     
@@ -297,7 +218,7 @@ def load_model(config, device, active_properties):
     else:
         state_dict = checkpoint
     
-    # Load state dict (handle DiT/UNet with helper, SongUNet with standard loading)
+    # Load state dict (handle DiT/UNet with helper)
     loaded = False
     if hasattr(model, 'load_state_dict_with_resize'):
         try:
@@ -417,7 +338,7 @@ def load_test_combinations_comprehensive(dataset_path, include_properties, inclu
                         combinations[item].append(combo)
     
     if not combinations:
-        # Fallback: parse directory names directly (legacy datasets)
+        # Fallback: parse directory names directly
         direct_combos = []
         for item in os.listdir(dataset_path):
             item_path = os.path.join(dataset_path, item)
@@ -525,7 +446,6 @@ def evaluate_properties_comprehensive(image, expected_properties, include_proper
     gray = cv2.cvtColor(image_np, cv2.COLOR_RGB2GRAY)
     
     # Use Otsu thresholding on grayscale - adapts to each image's actual foreground/background
-    # This handles noisy backgrounds in canonical datasets better than fixed RGB distance.
     _, binary = cv2.threshold(gray, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
     # Invert if foreground got classified as white (we want object=white)
     if np.mean(binary) > 127:
@@ -661,21 +581,11 @@ def evaluate_properties_comprehensive(image, expected_properties, include_proper
 
                 best_shape_id = 0
                 best_iou = -1.0
-                # VGL_SHAPE_METRIC=v2 selects the component-wise, in-place matcher that reads ground
-                # truth on every dataset (vgl/shape_metric_v2.py). Default is the published matcher.
-                _use_v2 = os.environ.get("VGL_SHAPE_METRIC", "locked") == "v2"
-                if _use_v2:
-                    from vgl.shape_metric_v2 import classify_shape as _classify_v2
-                    _v2_name = _classify_v2(image_np)   # the HWC uint8 array the locked path scores
-                    best_shape_id = shape_names.index(_v2_name) if _v2_name in shape_names else 0
-                    best_iou = 1.0
                 # Imported outside the try so a missing module fails loudly instead
                 # of silently degrading the shape metric to the contour fallback.
                 from scripts.generate_compositional_dataset_coverage import generate_shape_image
                 try:
                     for sh_id, sh_name in enumerate(shape_names):
-                        if _use_v2:
-                            break
                         for size in [8, 10, 12, 14, 16, 18]:
                             t = generate_shape_image(radius=size, position=(0, 0), shape=sh_name,
                                                     color_rgb=(255, 0, 0), image_size=64, rotation=0, count=1)
@@ -1200,10 +1110,7 @@ def main(args):
     
     print("Loading model...")
     model = load_model(config, device, args.include_properties)
-    if config.get('architecture') == 'songunet':
-        diffusion = create_diffusion(str(args.num_sampling_steps), learn_sigma=False)
-    else:
-        diffusion = create_diffusion(str(args.num_sampling_steps))
+    diffusion = create_diffusion(str(args.num_sampling_steps))
     
     print("Loading test combinations...")
     combinations = load_test_combinations_comprehensive(

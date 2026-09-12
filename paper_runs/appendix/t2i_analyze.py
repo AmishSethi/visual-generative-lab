@@ -36,10 +36,6 @@ from pathlib import Path
 import numpy as np
 from PIL import Image
 
-# Run as `python paper_runs/appendix/t2i_analyze.py` and sys.path[0] is this
-# directory, not the repo root, so the absolute imports below fail.  The sibling
-# eval_* scripts all carry this guard; without it the module form is the only
-# one that works, which is easy to trip over from a job script.
 if __package__ in (None, ""):
     sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 

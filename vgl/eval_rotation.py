@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 """
 Evaluation script for continuous rotation angle DiT model.
-Fixed with template matching for accurate angle detection.
+Angle detection uses template matching.
 """
 import os
 import torch
@@ -20,7 +20,6 @@ from scipy.optimize import minimize_scalar
 # Import model components
 from vgl.models_rotation import DiT_models_rotation as DiT_models
 from vgl.unet_models_rotation import UNet_models_rotation as UNet_models
-from vgl.unet_models_song_rotation import SongUNet_Rotation_models as SongUNet_models
 from vgl.diffusion import create_diffusion
 from vgl.flow_matching import FlowMatching
 
@@ -823,8 +822,7 @@ def load_model(config, device):
                    '/vae/' in ckpt_path_lower) and 'novae' not in ckpt_path_lower and 'no_vae' not in ckpt_path_lower
     # The run config records this explicitly and is authoritative; the path
     # heuristic below is only a fallback for older checkpoints whose run_config
-    # predates the flag. Relying on the path alone silently built a pixel-space
-    # model for latent checkpoints under directories like "hires128_vae/".
+    # predates the flag.
     if config.get('use_latent_diffusion'):
         is_vae_model = True
 
@@ -853,35 +851,6 @@ def load_model(config, device):
         # For non-VAE models, keep standard settings
         config['use_latent_diffusion'] = False
     
-    # For SongUNet, detect channels from checkpoint (concat conditioning adds channels)
-    if architecture == 'songunet' and not config.get('use_latent_diffusion', False):
-        found_channels = False
-        checkpoint_channels = None
-        for key in state_dict.keys():
-            if 'enc.' in key and 'conv.weight' in key:
-                checkpoint_channels = state_dict[key].shape[1]
-                print(f"SongUNet checkpoint has {checkpoint_channels} input channels (from {key})")
-                found_channels = True
-                break
-        if not found_channels:
-            checkpoint_channels = 3
-            print("SongUNet detected but could not infer input channels; using default 3-channel RGB")
-
-        # Infer conditioning method and base channels
-        extra_channels = 1  # rotation uses scalar channel when concatenated
-        if checkpoint_channels > 3:
-            if config.get('conditioning_method') != 'concat':
-                print("Detected extra input channels; overriding conditioning_method to 'concat'")
-            config['conditioning_method'] = 'concat'
-            base_channels = checkpoint_channels - extra_channels
-        else:
-            if config.get('conditioning_method') != 'adaln':
-                print("Detected 3-channel input; overriding conditioning_method to 'adaln'")
-            config['conditioning_method'] = 'adaln'
-            base_channels = checkpoint_channels
-
-        in_channels = max(1, base_channels)
-    
     if architecture == 'unet':
         model = UNet_models[config['model_type']](
             input_size=input_size,
@@ -889,15 +858,6 @@ def load_model(config, device):
             rotation_embedding_type=config.get('rotation_embedding_type', 'circular'),
             conditioning_method=config.get('conditioning_method', 'concat'),
             class_dropout_prob=config.get('rotation_dropout_prob', 0.0)
-        ).to(device)
-    elif architecture == 'songunet':
-        model = SongUNet_models[config['model_type']](
-            img_resolution=input_size,
-            in_channels=in_channels,
-            out_channels=in_channels,  # SongUNet doesn't learn sigma by default
-            rotation_embedding_type=config.get('rotation_embedding_type', 'sinusoidal'),
-            conditioning_method=config.get('conditioning_method', 'adaln'),
-            rotation_dropout_prob=config.get('rotation_dropout_prob', 0.0)
         ).to(device)
     else:
         model = DiT_models[config['model_type']](
@@ -939,10 +899,7 @@ def main(args):
     
     # Detect architecture from model name or checkpoint path
     ckpt_path_lower = str(args.ckpt).lower()
-    if 'songunet' in args.model.lower() or 'songunet' in ckpt_path_lower:
-        architecture = 'songunet'
-        model_key = 'SongUNet-Rotation-S'  # Correct model key for SongUNet Rotation
-    elif 'unet' in args.model.lower() or 'unet' in ckpt_path_lower:
+    if 'unet' in args.model.lower() or 'unet' in ckpt_path_lower:
         architecture = 'unet'
         model_key = args.model
     else:
@@ -958,8 +915,6 @@ def main(args):
         rotation_embedding_type = 'sinusoidal'  
     elif 'linear' in ckpt_path_lower:
         rotation_embedding_type = 'linear'
-    elif architecture == 'songunet':
-        rotation_embedding_type = 'sinusoidal'  # NEW models use sinusoidal
     else:
         rotation_embedding_type = 'linear'
     
@@ -968,12 +923,6 @@ def main(args):
         conditioning_method = 'adaln'
     elif 'concat' in ckpt_path_lower:
         conditioning_method = 'concat'
-    elif architecture == 'songunet':
-        # Rotation NEW model uses concat (has 4 channels), but only if not explicitly specified
-        if 'adaln' not in ckpt_path_lower and 'concat' not in ckpt_path_lower:
-            conditioning_method = 'concat'  # Rotation NEW model uses concat
-        else:
-            conditioning_method = 'concat'  # default
     else:
         conditioning_method = 'concat'
     
@@ -1051,13 +1000,8 @@ def main(args):
         diffusion = FlowMatching(sigma_min=0.0, sigma_data=1.0, use_sigmoid_time=True)
     else:
         print("Using Diffusion sampler")
-        # SongUNet doesn't learn sigma, so we need to specify that
-        if architecture == 'songunet':
-            diffusion = create_diffusion(str(args.num_sampling_steps), learn_sigma=False)
-            print("  (SongUNet: learn_sigma=False)")
-        else:
-            diffusion = create_diffusion(str(args.num_sampling_steps))
-            print("  (DiT/UNet: learn_sigma=True)")
+        diffusion = create_diffusion(str(args.num_sampling_steps))
+        print("  (DiT/UNet: learn_sigma=True)")
     
     all_angles = train_angles_eval + interp_angles + extrap_angles
     print(f"\nGenerating samples for {len(all_angles)} angles...")

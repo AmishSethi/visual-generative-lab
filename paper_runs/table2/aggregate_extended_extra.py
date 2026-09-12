@@ -3,9 +3,6 @@ from __future__ import annotations
 
 import os as _os
 
-# Storage root for datasets, checkpoints and results.
-# Override for your own machine:  export VGL_ROOT=/path/to/scratch
-VGL_ROOT = _os.environ.get("VGL_ROOT", _os.path.expanduser("~/vgl-data"))
 # Conda activation line injected into generated SLURM scripts.
 VGL_CONDA_ACTIVATE = _os.environ.get("VGL_CONDA_ACTIVATE", "conda activate vgl")
 
@@ -120,7 +117,7 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--v1-root", type=Path, default=EVAL_ROOT / "samples20_steps250_cfg1")
     parser.add_argument("--extended-root", type=Path, default=EVAL_ROOT / "samples20_steps250_cfg1_extended")
-    parser.add_argument("--output", type=Path, default=Path(VGL_ROOT) / "paper_runs/table2/extended_extra_aggregate.json")
+    parser.add_argument("--output", type=Path, default=Path(__file__).resolve().parent / "extended_extra_aggregate.json")
     args = parser.parse_args()
 
     position = aggregate_position(args.v1_root, min_margin=POSITION_MIN_MARGIN)

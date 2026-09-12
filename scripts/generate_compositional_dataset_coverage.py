@@ -274,8 +274,7 @@ def create_coverage_based_splits(property_values, include_properties, coverage=0
     
     # Every in-range value of EVERY property must appear in at least one training
     # combination; otherwise a held-out combination tests an unseen value rather than an
-    # unseen pairing. The check used to run for discrete properties only, which left
-    # count and rotation unguarded at 25% coverage.
+    # unseen pairing.
     for prop in include_properties:
         prop_idx = include_properties.index(prop)
         seen_values = set(combo[prop_idx] for combo in train_combinations)

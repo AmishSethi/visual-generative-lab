@@ -2,8 +2,8 @@
 """Recompute every simple-64 baseline comparator on the *same* condition set as
 the experiment it is compared against.
 
-The paper's Extrap. column is not one protocol. Size uses a 14-condition extended
-grid ({1..4} u {21..30}); the visually complex runs score 9 conditions
+Extrapolation condition sets differ across experiments. Size uses a 14-condition
+extended grid ({1..4} u {21..30}); the visually complex runs score 9 conditions
 ({1..4} u {21..25}). Position's published cell uses a 320-condition extended grid;
 the complex runs score 100 evenly sampled conditions. Means taken over different
 condition sets have different denominators and are not directly comparable.

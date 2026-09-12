@@ -34,8 +34,8 @@ three splits:
 
 ## Results
 
-Accuracy (%) on the four numeric skills, mean over three seeds (ten for the rotation baseline).
-Thresholds: IoU ≥ 0.90 (size), ≤ 2 px (position), ≤ 5° (rotation), exact match (count).
+Accuracy (%) on the four numeric skills, mean over seeds.
+Thresholds are listed under [Evaluation metrics](#evaluation-metrics).
 
 | Model | size train | size extra | pos train | pos extra | rot train | rot extra | count train | count extra |
 |---|--:|--:|--:|--:|--:|--:|--:|--:|
@@ -62,6 +62,7 @@ git clone https://github.com/AmishSethi/visual-generative-lab.git
 cd visual-generative-lab
 conda env create -f environment.yml
 conda activate vgl
+pip install -e .
 ```
 
 Or with pip (assumes a working PyTorch ≥ 2.0 + CUDA install):
@@ -100,7 +101,7 @@ python -m paper_runs.table2.generate_canonical_datasets --skills size --output-r
 
 # 2. train the baseline (single GPU; use --nproc_per_node=N for more)
 torchrun --standalone --nproc_per_node=1 scripts/train.py \
-  --data-path $T2/datasets/size/train --results-dir $T2/results/size/baseline/seed_0 \
+  --data-path $T2/datasets/size --results-dir $T2/results/size/baseline/seed_0 \
   --model DiT-S/2 --image-size 64 --epochs 1000 --global-batch-size 128 --global-seed 0 \
   --radius-embedding-type linear --conditioning-method concat
 
@@ -108,7 +109,7 @@ torchrun --standalone --nproc_per_node=1 scripts/train.py \
 python -m paper_runs.table2.evaluate_table2 --skill size --variant baseline --seed 0
 ```
 
-On a SLURM cluster, `python -m paper_runs.table2.submit_training --skills size --seeds 0 --submit`
+On a SLURM cluster, `python -m paper_runs.table2.submit_training --skills size --variants baseline --seeds 0 --submit`
 writes and submits the same command.
 
 Each skill has its own training entry point, because the conditioning differs:
@@ -131,13 +132,12 @@ vgl/                       importable library
   models_position.py       DiT for 2D position
   models_rotation.py       DiT for angle conditioning
   models_compositional.py  multi-skill DiT
-  unet_models*.py          U-Net and SongUNet backbones
+  unet_models*.py          U-Net backbones
   diffusion/               DDPM (adapted from OpenAI ADM)
   flow_matching.py         flow-matching objective
   eval_radius.py           size sampler + rule-based metric
   eval_position.py         position sampler + metric
   eval_rotation.py         rotation sampler + metric
-  eval_count.py            count sampler + metric
   reproducibility_utils.py seeding, worker init, run-config logging
 
 scripts/                   training entry points (one per skill)
@@ -147,7 +147,7 @@ paper_runs/              exact code that produced each paper table
   table3/                compositional generalization (Table 3)
   appendix/              experiments behind the appendix: data scaling, resolution, token-matched
                          latent vs pixel, visually complex renders, text conditioning, the
-                         text-to-image probe, coverage vs K, and count-metric cross-validation
+                         text-to-image probe, and coverage vs K
 
 tests/                   unit tests
 docs/                    extended documentation
@@ -158,8 +158,9 @@ docs/                    extended documentation
 ## Reproducing paper results
 
 `paper_runs/` is the reproduction layer. Each subdirectory has a `manifest.py` holding the canonical
-paths and per-skill configuration, a `submit_*.py` that emits SLURM scripts, and an `evaluate_*.py`
-that is the **paper-locked evaluator** — the code that produced the published numbers.
+paths and per-skill configuration, `submit_*.py` scripts that emit SLURM jobs, and the **paper-locked
+evaluators** (`evaluate_table2.py`, `evaluate_table3.py`, and the `eval_*.py` scripts under `appendix/`),
+the code that produced the published numbers.
 
 ```bash
 # Table 2: single-skill generalization, all skills x all variants x 3 seeds
@@ -168,10 +169,13 @@ python -m paper_runs.table2.evaluate_table2 --skill size --variant baseline --se
 python -m paper_runs.table2.aggregate_table2
 
 # Table 3: compositional generalization
+python -m paper_runs.table3.generate_datasets
 python -m paper_runs.table3.submit_training
+python -m paper_runs.table3.evaluate_table3 --pair color_shape --coverage 75 --seed 0
+python -m paper_runs.table3.aggregate_table3
 ```
 
-Point `manifest.py` at your own storage before submitting — the paths there are the ones we used.
+Everything is written under `$VGL_ROOT`; each `manifest.py` reads that variable.
 
 
 ---
@@ -186,9 +190,7 @@ python paper_runs/table2/generate_canonical_datasets.py --skills size position r
 
 Datasets are `ImageFolder`-structured with the skill value encoded in the directory name.
 
-Compositional pairs that include rotation without shape render an arrow (the same polygon as the
-single-skill rotation set), and the evaluator recentres the object before reading its angle, since the
-rotation detector is not translation invariant (set `VGL_ROTATION_SHAPE=arrow` when evaluating them).
+Compositional pairs that include rotation without shape render an arrow; set `VGL_ROTATION_SHAPE=arrow` when evaluating them.
 
 | skill | type | training domain | extrapolation values |
 |---|---|---|---|
@@ -209,6 +211,13 @@ Hugging Face Hub at [ASethi04/vgl-checkpoints](https://huggingface.co/ASethi04/v
 
 ```bash
 huggingface-cli download ASethi04/vgl-checkpoints --include "table2/rotation/baseline/*" --local-dir checkpoints
+```
+
+To evaluate a downloaded checkpoint with the paper's protocol, point the evaluator at it:
+
+```bash
+python -m paper_runs.table2.evaluate_table2 --skill rotation --variant baseline --seed 0 \
+  --checkpoint checkpoints/table2/rotation/baseline/seed_0/final.pt
 ```
 
 See [`docs/CHECKPOINTS.md`](docs/CHECKPOINTS.md) for the mapping from checkpoint to table row.
@@ -246,12 +255,3 @@ Every metric is rule-based, with no learned components, so scores are reproducib
 
 Built on [facebookresearch/DiT](https://github.com/facebookresearch/DiT). The diffusion
 implementation is adapted from [OpenAI's ADM](https://github.com/openai/guided-diffusion).
-
-## License
-
-**[CC BY-NC 4.0](LICENSE)** — free to share and adapt with attribution, **non-commercial use only**.
-
-This repository is a derivative of [DiT](https://github.com/facebookresearch/DiT), which Meta
-released under CC BY-NC 4.0, so it inherits those terms including the non-commercial restriction.
-`vgl/diffusion/` is adapted from [OpenAI ADM](https://github.com/openai/guided-diffusion) and retains
-its original MIT license.

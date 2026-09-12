@@ -9,7 +9,7 @@ Hosted on the Hugging Face Hub: **https://huggingface.co/ASethi04/vgl-checkpoint
 
 ```bash
 pip install -U huggingface_hub
-# one cell of Table 2 (rotation baseline, all ten seeds)
+# one cell of Table 2 (rotation baseline, all seeds)
 huggingface-cli download ASethi04/vgl-checkpoints --include "table2/rotation/baseline/*" --local-dir checkpoints
 # everything (98 GB)
 huggingface-cli download ASethi04/vgl-checkpoints --local-dir checkpoints
@@ -19,14 +19,14 @@ huggingface-cli download ASethi04/vgl-checkpoints --local-dir checkpoints
 
 ```
 checkpoints/
-  {skill}/{variant}/seed_{n}/final_{step}.pt
+  table2/{skill}/{variant}/seed_{n}/final.pt
+  table2/{skill}/{variant}/seed_{n}/run_config.json
 ```
 
 `skill` ∈ {size, position, rotation, count}; `variant` is a row of the results table
 (`baseline`, `sinusoidal`, `rotary`, `adaln`, `vae`, `flow`, `unet`, `dit_large`).
 
-Each file contains `model`, `ema`, `opt`, `train_steps` and `epoch`. Evaluation uses the **EMA**
-weights, which is what the paper reports.
+Each file contains `model`, `ema`, `opt`, `train_steps` and `epoch`. Evaluation uses the **EMA** weights.
 
 ## Mapping to the results table
 
@@ -38,22 +38,33 @@ weights, which is what the paper reports.
 | + AdaLN | `adaln` | AdaLN-Zero instead of concatenation |
 | + VAE latent | `vae` | `--use-latent-diffusion` |
 | + flow matching | `flow` | `--use-flow-matching` |
-| + U-Net (capacity-matched) | `unet` | 22.96M params vs DiT-S/2's 22.20M |
+| + U-Net (capacity-matched) | `unet` | parameter-matched to DiT-S/2 |
 | + DiT-L (capacity scaling) | `dit_large` | ~306M params |
 
-Count checkpoints are trained for 3000 epochs; every other skill uses 1000. See the README section
-"Count dataset".
+Count checkpoints are trained for 3000 epochs; every other skill uses 1000.
+
+## Evaluating a checkpoint
+
+```bash
+python -m paper_runs.table2.evaluate_table2 --skill size --variant baseline --seed 0 \
+  --checkpoint checkpoints/table2/size/baseline/seed_0/final.pt
+```
 
 ## Loading a checkpoint
 
+The constructor arguments are the training arguments saved beside each checkpoint:
+
 ```python
-import torch
+import json, torch
 from vgl.models import DiT_models_continuous
 
-ckpt = torch.load("checkpoints/size/baseline/seed_0/final_0078000.pt", map_location="cpu")
-model = DiT_models_continuous["DiT-S/2"](
-    input_size=64, in_channels=3,
-    radius_embedding_type="linear", conditioning_method="concat")
-model.load_state_dict(ckpt["ema"])   # EMA weights are what the paper evaluates
+run = "checkpoints/table2/size/baseline/seed_0"
+args = json.load(open(f"{run}/run_config.json"))["args"]
+model = DiT_models_continuous[args["model"]](
+    input_size=args["image_size"], in_channels=3,
+    radius_embedding_type=args["radius_embedding_type"],
+    conditioning_method=args["conditioning_method"],
+    null_embedding_type=args["null_embedding_type"])
+model.load_state_dict(torch.load(f"{run}/final.pt", map_location="cpu")["ema"])
 model.eval()
 ```

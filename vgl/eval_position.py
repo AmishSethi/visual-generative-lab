@@ -1,8 +1,8 @@
 #!/usr/bin/env python
 """
-Enhanced evaluation script for continuous position DiT model.
-Now includes nearest training point calculation, improved coordinate debugging,
-and comprehensive visualizations similar to eval_radius.py.
+Evaluation script for the continuous position DiT model.
+Measures position error against the conditioning target, reports the distance
+to the nearest training position, and saves comparison visualizations.
 """
 import os
 import re
@@ -54,7 +54,6 @@ from scipy.spatial.distance import cdist
 # Import model components
 from vgl.models_position import DiT_models_position as DiT_models
 from vgl.unet_models_position import UNet_models_position as UNet_models
-from vgl.unet_models_song_position import SongUNet_Position_models as SongUNet_models
 from vgl.diffusion import create_diffusion
 from diffusers.models import AutoencoderKL
 from vgl.flow_matching import FlowMatching
@@ -95,17 +94,17 @@ def parse_checkpoint_path(ckpt_path):
     Parse model configuration from checkpoint path.
     Expected folder format: circle_model_position_36_8x8_linear_concat_no_cfg_4workers
     """
-    # Get the folder name from the path - handle both old and new folder structures
+    # Get the run folder name from the path
     path_parts = Path(ckpt_path).parts
     folder_name = None
     
-    # First try to find 'circle_model_position' (old structure)
+    # First try 'circle_model_position' folders
     for part in path_parts:
         if 'circle_model_position' in part.lower():
             folder_name = part
             break
     
-    # If not found, look for ablation folder structure (new structure)
+    # Otherwise look for the ablation folder structure
     if not folder_name:
         for part in path_parts:
             if 'position_' in part:
@@ -126,11 +125,8 @@ def parse_checkpoint_path(ckpt_path):
     # Look for patterns like "DiT-S", "DiT-B", "DiT-L", "DiT-XL", "UNet-S", etc. in the entire path
     full_path_str = str(ckpt_path).lower()
     
-    # Check architecture (check for songunet BEFORE checking for unet, since songunet contains "unet")
-    if 'songunet' in full_path_str:
-        config['architecture'] = 'songunet'
-        config['model_type'] = 'SongUNet-Position-B'  # Will be overridden later if needed (default to -B for NEW models)
-    elif 'unet' in full_path_str:
+    # Check architecture
+    if 'unet' in full_path_str:
         config['architecture'] = 'unet'
         # Parse UNet model type
         if 'unet-xl' in full_path_str:
@@ -232,18 +228,7 @@ def parse_checkpoint_path(ckpt_path):
         config['use_flow_matching'] = False
     
     # Parse architecture
-    if 'songunet' in folder_name.lower():
-        config['architecture'] = 'songunet'
-        # Default to Position-B for NEW models (they use 256 channels)
-        config['model_name'] = 'SongUNet-Position-B'  # Correct model key for SongUNet Position NEW
-        # NEW SongUNet models use sinusoidal embedding and adaln conditioning
-        # Override generic parsing unless explicitly specified in folder name
-        if 'linear' not in folder_name.lower() and 'sinusoidal' not in folder_name.lower() and 'rotary' not in folder_name.lower():
-            config['position_embedding_type'] = 'sinusoidal'
-        if 'adaln' not in folder_name.lower() and 'concat' not in folder_name.lower():
-            config['conditioning_method'] = 'adaln'
-    else:
-        config['architecture'] = 'dit'  # default
+    config['architecture'] = 'dit'  # default
     
     # Set other defaults
     config['null_position'] = (0.0, 0.0)
@@ -921,7 +906,7 @@ def create_metric_heatmaps(results_exact, results_interp, results_extrap, save_p
 
 def save_example_comparisons_enhanced(results, samples_dict, save_path, training_positions, num_examples=3):
     """
-    Save visual comparisons with enhanced debugging information.
+    Save visual comparisons with debugging information.
     """
     os.makedirs(os.path.join(save_path, 'comparisons'), exist_ok=True)
     
@@ -1010,7 +995,7 @@ def save_example_comparisons_enhanced(results, samples_dict, save_path, training
 
 def evaluate_position_set_enhanced(position_values, samples_dict, config, training_positions, label="", debug_first=True):
     """
-    Evaluate a set of position values with enhanced metrics.
+    Evaluate a set of position values.
     """
     results = {}
     
@@ -1056,7 +1041,7 @@ def evaluate_position_set_enhanced(position_values, samples_dict, config, traini
 def print_results_table_enhanced(summary_exact, overall_exact, summary_interp, overall_interp, 
                                 summary_extrap, overall_extrap, cfg_scale=1.0):
     """
-    Print enhanced results table with nearest training point info.
+    Print results table with nearest training point info.
     """
     print("\n" + "="*110)
     print("POSITION EVALUATION RESULTS")
@@ -1160,7 +1145,7 @@ def print_results_table_enhanced(summary_exact, overall_exact, summary_interp, o
 
 def calculate_summary_statistics_enhanced(results, label=""):
     """
-    Calculate enhanced summary statistics including nearest training point info.
+    Calculate summary statistics including nearest training point info.
     """
     if not results:
         return {}, {}
@@ -1245,8 +1230,7 @@ def load_model(config, device):
                    '/vae/' in ckpt_path_lower) and 'novae' not in ckpt_path_lower and 'no_vae' not in ckpt_path_lower)
     # The run config records this explicitly and is authoritative; the path
     # heuristic below is only a fallback for older checkpoints whose run_config
-    # predates the flag. Relying on the path alone silently built a pixel-space
-    # model for latent checkpoints under directories like "hires128_vae/".
+    # predates the flag.
     if config.get('use_latent_diffusion'):
         is_vae_model = True
 
@@ -1275,52 +1259,10 @@ def load_model(config, device):
         # For non-VAE models, keep standard settings
         config['use_latent_diffusion'] = False
     
-    # For SongUNet, detect channels from checkpoint (concat conditioning adds channels)
-    if architecture == 'songunet' and not is_vae_model:
-        found_channels = False
-        checkpoint_channels = None
-        for key in state_dict.keys():
-            if 'enc.' in key and 'conv.weight' in key:
-                checkpoint_channels = state_dict[key].shape[1]
-                print(f"SongUNet checkpoint has {checkpoint_channels} input channels (from {key})")
-                found_channels = True
-                break
-        if not found_channels:
-            checkpoint_channels = 3
-            print("SongUNet detected but could not infer input channels; using default 3-channel RGB")
-
-        # Infer conditioning method and base channels
-        extra_channels = 2  # position uses x,y channels when concatenated
-        if checkpoint_channels > 3:
-            if config.get('conditioning_method') != 'concat':
-                print("Detected extra input channels; overriding conditioning_method to 'concat'")
-            config['conditioning_method'] = 'concat'
-            base_channels = checkpoint_channels - extra_channels
-        else:
-            if config.get('conditioning_method') != 'adaln':
-                print("Detected 3-channel input; overriding conditioning_method to 'adaln'")
-            config['conditioning_method'] = 'adaln'
-            base_channels = checkpoint_channels
-
-        in_channels = max(1, base_channels)
-    
     model_key = config.get('model_name', config.get('model_type', 'DiT-S/2'))
     print(f"DEBUG load_model: model_key={model_key}, model_name={config.get('model_name')}, model_type={config.get('model_type')}")
     
-    if architecture == 'songunet':
-        # Use standard SongUNet-Position-S
-        # The model uses: model_channels=128, channel_mult=[1,2,2]
-        model_key = 'SongUNet-Position-S'
-        print(f"Using standard {model_key} at {input_size}x{input_size} resolution")
-        model = SongUNet_models[model_key](
-            img_resolution=input_size,
-            in_channels=in_channels,
-            out_channels=in_channels,
-            position_embedding_type=config['position_embedding_type'],
-            conditioning_method=config['conditioning_method'],
-            position_dropout_prob=config['position_dropout_prob']
-        ).to(device)
-    elif architecture == 'unet':
+    if architecture == 'unet':
         model = UNet_models[config['model_type']](
             input_size=input_size,
             in_channels=in_channels,
@@ -1573,13 +1515,8 @@ def main(args):
         diffusion = FlowMatching(sigma_min=0.0, sigma_data=1.0, use_sigmoid_time=True)
     else:
         print("Using Diffusion sampler")
-        # SongUNet doesn't learn sigma, so we need to specify that
-        if config.get('architecture') == 'songunet':
-            diffusion = create_diffusion(str(args.num_sampling_steps), learn_sigma=False)
-            print("  (SongUNet: learn_sigma=False)")
-        else:
-            diffusion = create_diffusion(str(args.num_sampling_steps))
-            print("  (DiT/UNet: learn_sigma=True)")
+        diffusion = create_diffusion(str(args.num_sampling_steps))
+        print("  (DiT/UNet: learn_sigma=True)")
     
     # Generate samples for all positions
     all_positions = exact_train_positions + interp_positions + extrap_positions
@@ -1641,7 +1578,7 @@ def main(args):
     print("\nCreating visualizations...")
     visualize_results(results_exact, results_interp, results_extrap, output_dir, config)
     
-    # Save example comparisons with enhanced visualizations
+    # Save example comparisons
     # Use simple comparison saving
     save_position_comparisons_simple(
         {**results_exact, **results_interp, **results_extrap}, 

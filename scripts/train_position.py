@@ -6,10 +6,10 @@
 
 """
 A minimal training script for DiT using PyTorch DDP.
-Modified for continuous position (x,y) conditioning with checkpoint resuming and signal handling.
+Supports continuous position (x,y) conditioning, checkpoint resuming, and signal handling.
 """
 import torch
-# the first flag below was False when we tested this script but True makes A100 training a lot faster:
+# TF32 makes A100 training a lot faster:
 torch.backends.cuda.matmul.allow_tf32 = True
 torch.backends.cudnn.allow_tf32 = True
 import torch.distributed as dist
@@ -61,7 +61,6 @@ from datetime import datetime
 # Import position models instead of radius models
 from vgl.models_position import DiT_models_position as DiT_models
 from vgl.unet_models_position import UNet_models_position as UNet_models
-from vgl.unet_models_song_position import SongUNet_Position_models as SongUNet_models
 from vgl.diffusion import create_diffusion
 from diffusers.models import AutoencoderKL
 # NEW: Import flow matching utilities
@@ -193,7 +192,6 @@ def update_ema(ema_model, model, decay=0.9999):
     model_params = OrderedDict(model.named_parameters())
 
     for name, param in model_params.items():
-        # TODO: Consider applying only to params that require_grad to avoid small numerical changes of pos_embed
         ema_params[name].mul_(decay).add_(param.data, alpha=1 - decay)
 
 
@@ -382,35 +380,20 @@ def main(args):
             position_dropout_prob=args.position_dropout_prob,
             max_position_value=1.0  # Assuming normalized positions
         )
-    elif args.architecture == "songunet":
-        model = SongUNet_models[args.model](
-            img_resolution=input_size,
-            in_channels=in_channels,
-            out_channels=in_channels,  # SongUNet doesn't learn sigma by default
-            # learn_sigma defaults to False in SongUNet to match original implementation
-            position_embedding_type=args.position_embedding_type,
-            conditioning_method=args.conditioning_method,
-            position_dropout_prob=args.position_dropout_prob,
-        )
     else:
         raise ValueError(f"Unknown architecture: {args.architecture}")
     # Note that parameter initialization is done within the model constructor
     ema = deepcopy(model).to(device)  # Create an EMA of the model for use after training
     requires_grad(ema, False)
-    # Use find_unused_parameters=True for SongUNet to avoid DDP errors
-    # Also needed for learnable null embedding which isn't used when dropout_prob=0
-    needs_unused = args.architecture == "songunet" or args.null_embedding_type == "learnable"
+    # Needed for learnable null embedding which isn't used when dropout_prob=0
+    needs_unused = args.null_embedding_type == "learnable"
     if needs_unused:
         model = DDP(model.to(device), device_ids=[rank], find_unused_parameters=True)
     else:
         model = DDP(model.to(device), device_ids=[rank], find_unused_parameters=False)
     # Create loss function (either diffusion or flow matching)
-    if args.architecture == "songunet":
-        # SongUNet doesn't learn sigma by default
-        loss_fn = create_loss_function(args, timestep_respacing="", learn_sigma=False)
-    else:
-        # DiT and UNet models learn sigma
-        loss_fn = create_loss_function(args, timestep_respacing="", learn_sigma=True)
+    # DiT and UNet models learn sigma
+    loss_fn = create_loss_function(args, timestep_respacing="", learn_sigma=True)
     
     # Log which objective we're using
     objective_type = "Flow Matching" if getattr(args, 'use_flow_matching', False) else "Diffusion"
@@ -700,8 +683,8 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--data-path", type=str, required=True)
     parser.add_argument("--results-dir", type=str, default="results_position")
-    parser.add_argument("--model", type=str, choices=list(DiT_models.keys()) + list(UNet_models.keys()) + list(SongUNet_models.keys()), default="DiT-S/2")
-    parser.add_argument("--architecture", type=str, choices=["dit", "unet", "songunet"], default="dit", help="Model architecture to use")
+    parser.add_argument("--model", type=str, choices=list(DiT_models.keys()) + list(UNet_models.keys()), default="DiT-S/2")
+    parser.add_argument("--architecture", type=str, choices=["dit", "unet"], default="dit", help="Model architecture to use")
     parser.add_argument("--image-size", type=int, choices=[64, 128, 256, 512], default=64)
     parser.add_argument("--epochs", type=int, default=1000)
     parser.add_argument("--global-batch-size", type=int, default=64)
@@ -728,7 +711,7 @@ if __name__ == "__main__":
     parser.add_argument("--null-embedding-type", type=str, choices=["zero", "learnable"], default="learnable",
                         help="Type of null embedding to use for unconditional generation in CFG")
     parser.add_argument("--use-latent-diffusion", action="store_true", default=False,
-                        help="Use VAE latent diffusion. Use --no-use-latent-diffusion for direct pixel diffusion")
+                        help="Train in the latent space of the pretrained VAE (default: pixel space)")
     parser.add_argument("--vae", type=str, choices=["ema", "mse"], default="ema",
                         help="Choice of VAE model (doesn't affect training)")
     

@@ -1,6 +1,6 @@
 """
 UNet-based Diffusion Models with Continuous Radius Conditioning
-Updated with improved block structure matching DDPM paper implementation
+Block structure follows the DDPM reference implementation.
 """
 
 import torch
@@ -767,11 +767,12 @@ def UNet_B(**kwargs):
     )
 
 def UNet_M(**kwargs):
+    """24.9M-parameter U-Net used for the count row of the architecture ablation."""
     return UNet_Continuous(
         down_channels=[48, 96, 192, 384],
         mid_channels=[384, 384, 192],
         up_channels=[384, 192, 96, 48],
-        num_heads=4,
+        num_heads=6,
         t_emb_dim=192,
         radius_dim=192,
         **kwargs

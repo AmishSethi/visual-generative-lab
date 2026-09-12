@@ -219,8 +219,7 @@ def main():
     parser.add_argument("--out", type=Path, default=EVAL_ROOT / "realistic_results.json")
     args = parser.parse_args()
 
-    # Position queries are generated as nested x,y loops, so the evaluator's
-    # prefix truncation would sample only the left-hand columns of the canvas.
+    # Subsample position queries evenly instead of taking a prefix (see subsample.py).
     subsample.install(t2)
 
     payload = {"metric_ceilings_on_ground_truth": validate()}

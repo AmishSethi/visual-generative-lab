@@ -3,7 +3,9 @@ from __future__ import annotations
 
 import argparse
 import json
+import getpass
 import os
+import tempfile
 import sys
 from dataclasses import dataclass
 from datetime import datetime, timezone
@@ -11,7 +13,7 @@ from pathlib import Path
 from typing import Callable
 
 os.environ.setdefault("MPLBACKEND", "Agg")
-os.environ.setdefault("MPLCONFIGDIR", "/tmp/matplotlib")
+os.environ.setdefault("MPLCONFIGDIR", os.path.join(tempfile.gettempdir(), f"matplotlib-{getpass.getuser()}"))
 
 import numpy as np
 import torch
@@ -52,8 +54,7 @@ def calculate_rotation_metrics_robust(
     **kwargs,
 ) -> dict:
     """
-    Detect arrow angle using multi-scale template matching — the method
-    that produced the paper's rotation numbers (verified with paper checkpoint).
+    Detect arrow angle using multi-scale template matching.
     """
     from vgl.eval_rotation import extract_arrow_angle_template_matching
 
@@ -77,10 +78,10 @@ def calculate_rotation_metrics_robust(
         "expected_angle": expected_angle,
         "detected_angle": float(detected),
     }
-SIZE_EXTRAP_MAX = 30  # Table 2 protocol (radii 21..30); the base grid used 25
+SIZE_EXTRAP_MAX = 30  # Table 2 protocol (radii 21..30)
 SIZE_EXTRAP_MIN = 1
 POSITION_EXTRAP_MARGIN = 6.0
-POSITION_EXTRAP_MIN_MARGIN = 4.0  # Table 2 protocol (L_inf >= 4 px outside training); the base grid used 0.0
+POSITION_EXTRAP_MIN_MARGIN = 4.0  # Table 2 protocol (L_inf >= 4 px outside training)
 COUNT_EXTRAP_VALUES = (0.0, 1.0, 8.0, 9.0)
 COUNT_MIN_AREA = 30
 
@@ -273,14 +274,18 @@ def build_common_run_metadata(selection: RunSelection) -> tuple[dict, dict]:
     run_args = selection.run_config["args"]
     folder_name = selection.run_dir.name
     is_latent = run_args.get("use_latent_diffusion", False)
-    # scripts/eval_radius.py detects VAE models by checking for "vae" in folder_name.
+    # vgl/eval_radius.py detects VAE models by checking for "vae" in folder_name.
     # Ensure the folder name signals this so the loader uses the correct input size.
     if is_latent and "vae" not in folder_name.lower():
         folder_name = f"vae_{folder_name}"
+    model = run_args["model"]
+    if "count_embedding_type" in run_args and run_args["architecture"] == "unet" and model == "UNet-DiT-S2-matched":
+        # In the count U-Net checkpoints this name denotes the 24.9M-parameter U-Net registered as UNet-M.
+        model = "UNet-M"
     return run_args, {
         "folder_name": folder_name,
         "architecture": run_args["architecture"],
-        "model": run_args["model"],
+        "model": model,
         "image_size": run_args["image_size"],
         "conditioning_method": run_args["conditioning_method"],
         "use_flow_matching": run_args.get("use_flow_matching", False),
@@ -378,8 +383,6 @@ def build_rotation_config(selection: RunSelection, metadata: dict) -> dict:
 def create_sampler(config: dict, num_sampling_steps: int):
     if config.get("use_flow_matching", False):
         return FlowMatching(sigma_min=0.0, sigma_data=1.0, use_sigmoid_time=True)
-    if config.get("architecture") == "songunet":
-        return create_diffusion(str(num_sampling_steps), learn_sigma=False)
     return create_diffusion(str(num_sampling_steps))
 
 
@@ -745,6 +748,8 @@ def main():
     parser.add_argument("--eval-batch-size", type=int, default=8)
     parser.add_argument("--max-conditions-per-split", type=int, default=None)
     parser.add_argument("--output-root", type=Path, default=None)
+    parser.add_argument("--checkpoint", type=Path, default=None,
+                        help="Evaluate this checkpoint (its run_config.json must sit beside it, as in the Hub layout) instead of the latest finished run under RESULTS_ROOT.")
     parser.add_argument(
         "--size-extrap-min",
         type=int,
@@ -775,7 +780,11 @@ def main():
     output_dir = output_root / args.skill / args.variant / f"seed_{args.seed}"
     output_dir.mkdir(parents=True, exist_ok=True)
 
-    selection = latest_finished_run(args.skill, args.variant, args.seed)
+    if args.checkpoint:
+        run_dir = args.checkpoint.resolve().parent
+        selection = RunSelection(run_dir=run_dir, checkpoint=args.checkpoint.resolve(), run_config=load_json(run_dir / "run_config.json"))
+    else:
+        selection = latest_finished_run(args.skill, args.variant, args.seed)
     table_rows = [row for row, mapped_variant in TABLE_ROWS.items() if mapped_variant == args.variant]
 
     result = {

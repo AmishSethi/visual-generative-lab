@@ -6,10 +6,10 @@
 
 """
 A minimal training script for DiT using PyTorch DDP.
-Modified for compositional conditioning on all 6 properties: radius, position, shape, color, count, rotation.
+Compositional conditioning on radius, position, shape, color, count and rotation.
 """
 import torch
-# the first flag below was False when we tested this script but True makes A100 training a lot faster:
+# Enable TF32 for faster A100 training:
 torch.backends.cuda.matmul.allow_tf32 = True
 torch.backends.cudnn.allow_tf32 = True
 import torch.distributed as dist
@@ -60,8 +60,8 @@ import json
 from datetime import datetime
 
 # Import compositional models
+from vgl.reproducibility_utils import write_run_config
 from vgl.models_compositional import DiT_models_compositional as DiT_models
-from vgl.unet_models_song_compositional import CompositionalSongUNet_models as SongUNet_models
 from vgl.diffusion import create_diffusion
 # NEW: Import flow matching utilities
 from vgl.flow_matching import create_loss_function, add_flow_matching_args
@@ -121,9 +121,9 @@ class ImageFolderWithComposition(ImageFolder):
                     'rotation': 0.0 # no rotation
                 }
                 
-                # Detect format: NEW binary format (radius_10_position_0_5) vs OLD format (r6p0_xn5p0_y5p0)
+                # Detect format: property_value (radius_10_position_0_5) vs compact (r6p0_xn5p0_y5p0)
                 if 'radius' in folder_name or 'position' in folder_name or 'shape' in folder_name or 'color' in folder_name or 'count' in folder_name or 'rotation' in folder_name:
-                    # NEW BINARY FORMAT: property_value_property_value
+                    # property_value format
                     # Example: radius_10_position_0_5 or shape_circle_color_red
                     part_idx = 0
                     while part_idx < len(parts):
@@ -154,7 +154,7 @@ class ImageFolderWithComposition(ImageFolder):
                         else:
                             part_idx += 1
                 else:
-                    # OLD FORMAT: r6p0_xn5p0_y5p0_circle_red (backwards compatibility)
+                    # Compact format: r6p0_xn5p0_y5p0_circle_red
                     part_idx = 0
                     
                     # Parse radius (r6p0 -> 6.0, r7p6 -> 7.6)
@@ -203,7 +203,7 @@ class ImageFolderWithComposition(ImageFolder):
                 
                 self.property_mapping[i] = properties
                 
-                # Debug: Print examples of successful parses
+                # Print the first few parsed folders
                 if i < 3:
                     print(f"✓ Parsed folder '{folder_name}': {properties}")
                 
@@ -399,6 +399,15 @@ def main(args):
         logger = create_logger(experiment_dir)
         logger.info(f"Experiment directory: {experiment_dir}")
         logger.info(f"Active properties: {args.include_properties}")
+        write_run_config(
+            experiment_dir,
+            args,
+            extra={
+                "rank": rank,
+                "resolved_seed": seed,
+                "world_size": dist.get_world_size(),
+            },
+        )
     else:
         logger = create_logger(None)
         if args.resume_from:
@@ -432,36 +441,15 @@ def main(args):
             num_colors=args.num_colors,
             active_properties=args.include_properties  # Pass active properties to model
         )
-    elif args.architecture == "songunet":
-        model = SongUNet_models[args.model](
-            img_resolution=input_size,
-            in_channels=in_channels,
-            out_channels=in_channels,  # SongUNet doesn't learn sigma by default
-            active_properties=args.include_properties,
-            conditioning_method=args.conditioning_method,
-            radius_embedding_type=args.radius_embedding_type,
-            position_embedding_type=args.position_embedding_type,
-            property_dropout_prob=args.property_dropout_prob,
-            num_shapes=args.num_shapes,
-            num_colors=args.num_colors,
-        )
     else:
         raise ValueError(f"Unknown architecture: {args.architecture}")
     
     ema = deepcopy(model).to(device)
     requires_grad(ema, False)
-    # Use find_unused_parameters=True for SongUNet to avoid DDP errors
-    if args.architecture == "songunet":
-        model = DDP(model.to(device), device_ids=[rank], find_unused_parameters=True)
-    else:
-        model = DDP(model.to(device), device_ids=[rank], find_unused_parameters=False)
+    model = DDP(model.to(device), device_ids=[rank], find_unused_parameters=False)
     # Create loss function (either diffusion or flow matching)
-    if args.architecture == "songunet":
-        # SongUNet doesn't learn sigma by default
-        loss_fn = create_loss_function(args, timestep_respacing="", learn_sigma=False)
-    else:
-        # DiT and UNet models learn sigma
-        loss_fn = create_loss_function(args, timestep_respacing="", learn_sigma=True)
+    # DiT and UNet models learn sigma
+    loss_fn = create_loss_function(args, timestep_respacing="", learn_sigma=True)
     
     # Log which objective we're using
     objective_type = "Flow Matching" if getattr(args, 'use_flow_matching', False) else "Diffusion"
@@ -692,8 +680,8 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--data-path", type=str, required=True)
     parser.add_argument("--results-dir", type=str, default="results_compositional")
-    parser.add_argument("--model", type=str, choices=list(DiT_models.keys()) + list(SongUNet_models.keys()), default="DiT-S/2")
-    parser.add_argument("--architecture", type=str, choices=["dit", "songunet"], default="dit", help="Model architecture to use")
+    parser.add_argument("--model", type=str, choices=list(DiT_models.keys()), default="DiT-S/2")
+    parser.add_argument("--architecture", type=str, choices=["dit"], default="dit", help="Model architecture to use")
     parser.add_argument("--image-size", type=int, choices=[64, 128, 256, 512], default=64)
     parser.add_argument("--epochs", type=int, default=1000)
     parser.add_argument("--global-batch-size", type=int, default=64)

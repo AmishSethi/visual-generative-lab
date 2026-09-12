@@ -137,6 +137,35 @@ def lattice_centers(count, radius, gap, image_size, rng):
         centers.append((int(round(center_x)), int(round(center_y))))
     return centers
 
+def sample_non_overlapping_centers(count, radius, image_size, rng):
+    valid_min = -image_size // 2 + radius
+    valid_max = image_size // 2 - radius
+    min_distance_sq = (2 * (radius + 1)) ** 2
+    max_restarts = 4096
+    max_attempts_per_circle = 4096
+
+    for _ in range(max_restarts):
+        centers = []
+        for _ in range(count):
+            for _ in range(max_attempts_per_circle):
+                candidate = (
+                    int(rng.integers(valid_min, valid_max + 1)),
+                    int(rng.integers(valid_min, valid_max + 1)),
+                )
+                if all(
+                    (candidate[0] - x_coord) ** 2 + (candidate[1] - y_coord) ** 2 >= min_distance_sq
+                    for x_coord, y_coord in centers
+                ):
+                    centers.append(candidate)
+                    break
+            else:
+                break
+        if len(centers) == count:
+            return centers
+
+    raise RuntimeError(f"Could not place {count} circles without overlap.")
+
+
 def position_folder_name(x_coord, y_coord):
     x_str = f"{x_coord:.6f}".rstrip("0").rstrip(".").replace("-", "neg").replace(".", "p")
     y_str = f"{y_coord:.6f}".rstrip("0").rstrip(".").replace("-", "neg").replace(".", "p")

@@ -103,9 +103,8 @@ def _apply_shape(background, shape_masks, size, rng):
     """Composite shaded, shadowed objects into the background.
 
     Objects are composited one at a time, each with its own hue and highlight.
-    A single colour field shared by all objects lets adjacent objects merge into
-    one blob under the saturation key, which caps the count metric at 45% even
-    on ground-truth renders -- a metric failure rather than a model failure.
+    Per-object compositing keeps adjacent objects separable under the
+    saturation key.
     """
     if isinstance(shape_masks, np.ndarray):
         shape_masks = [shape_masks]

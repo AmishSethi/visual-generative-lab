@@ -79,7 +79,7 @@ def build_command(pair_name, coverage, seed):
     results_dir = RESULTS_ROOT / pair_name / f"cov{coverage}" / f"seed_{seed}"
 
     command = [
-        "train_compositional.py",
+        "scripts/train_compositional.py",
         "--data-path", str(data_path / "train"),
         "--include-properties", *pair_spec["properties"],
         "--results-dir", str(results_dir),

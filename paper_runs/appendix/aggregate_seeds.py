@@ -1,12 +1,10 @@
 #!/usr/bin/env python
 """Aggregate the single-skill baseline over every available seed.
 
-`paper_runs/table2/aggregate_table2.py` is fixed to seeds 0-2; this reads
-whatever seeds exist, so the baseline row is reported at n = 10 for all four
-skills rather than for rotation alone.
+Unlike `paper_runs/table2/aggregate_table2.py`, which is fixed to seeds 0-2,
+this reads whatever seeds exist.
 
-It also prints the paper's Table 2 values alongside, so any cell that does not
-reproduce is visible.
+It also prints the paper's Table 2 values alongside for comparison.
 """
 import argparse
 import json
@@ -25,10 +23,8 @@ PAPER_TABLE2_BASELINE = {
     "count": {"train": 99.7, "interp": None, "extra": 34.6},
 }
 
-# Each paper cell was produced by a specific evaluation run, and reading the
-# wrong one produces spurious differences: size and position use the extended
-# extrapolation grids; rotation uses the 5-degree run of the zero-null variant
-# (`baseline_nz`), the one with ten seeds.
+# Evaluation run behind each paper cell: size and position use the extended
+# extrapolation grids; rotation uses the 5-degree run of the zero-null variant.
 SOURCES = {
     "size": ("baseline", "samples20_steps250_cfg1_extended"),
     "position": ("baseline", "samples20_steps250_cfg1_extended"),

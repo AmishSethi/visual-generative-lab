@@ -3,9 +3,9 @@
 
 The `baseline_nz` variant matches the paper baseline DiT-S/2 + linear + concat
 rotation training, but with `--null-embedding-type zero` instead of the
-`learnable` default in `manifest.SKILLS["rotation"]`. Seeds 0/1/2 already exist
-under `RESULTS_ROOT/rotation/baseline_nz/seed_{N}/`; this script submits 1-GPU
-jobs for additional seeds without touching them.
+`learnable` default in `manifest.SKILLS["rotation"]`. This script submits one
+1-GPU job per seed (default seeds 3-9) and skips any seed that already has a
+completed run under `RESULTS_ROOT/rotation/baseline_nz/seed_{N}/`.
 """
 
 import os as _os

@@ -3,20 +3,22 @@
 Paper-locked Table 3 evaluator.
 
 For each (pair, coverage, seed) tuple, loads the trained compositional model
-and evaluates it on the test set using scripts/eval_compositional.py's machinery.
+and evaluates it on the test set using vgl/eval_compositional.py's machinery.
 Outputs a results.json with per-category, per-skill accuracies.
 """
 from __future__ import annotations
 
 import argparse
 import json
+import getpass
 import os
+import tempfile
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
 
 os.environ.setdefault("MPLBACKEND", "Agg")
-os.environ.setdefault("MPLCONFIGDIR", "/tmp/matplotlib")
+os.environ.setdefault("MPLCONFIGDIR", os.path.join(tempfile.gettempdir(), f"matplotlib-{getpass.getuser()}"))
 os.environ.setdefault("OMP_NUM_THREADS", "1")
 os.environ.setdefault("MKL_NUM_THREADS", "1")
 

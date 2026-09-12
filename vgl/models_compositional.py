@@ -3,7 +3,6 @@
 DiT model with compositional conditioning on radius, position, shape, and color.
 Supports both AdaLN and in-context (concatenation) conditioning.
 Only initializes embedders for active properties.
-Updated: Count now uses linear embedder for extrapolation.
 """
 
 import torch

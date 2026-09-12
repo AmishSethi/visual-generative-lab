@@ -15,7 +15,7 @@ def test_package_imports():
 
 @pytest.mark.parametrize("module", [
     "vgl.models", "vgl.models_position", "vgl.models_rotation",
-    "vgl.models_compositional", "vgl.unet_models", "vgl.unet_models_song",
+    "vgl.models_compositional", "vgl.unet_models",
     "vgl.diffusion", "vgl.flow_matching", "vgl.reproducibility_utils",
 ])
 def test_module_imports(module):

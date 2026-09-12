@@ -6,10 +6,10 @@
 
 """
 A minimal training script for DiT using PyTorch DDP.
-Modified for continuous radius conditioning with checkpoint resuming and signal handling.
+Supports continuous radius conditioning, checkpoint resuming, and signal handling.
 """
 import torch
-# the first flag below was False when we tested this script but True makes A100 training a lot faster:
+# TF32 makes A100 training a lot faster:
 torch.backends.cuda.matmul.allow_tf32 = True
 torch.backends.cudnn.allow_tf32 = True
 import torch.distributed as dist
@@ -45,7 +45,7 @@ for _name in ("all_reduce", "all_gather", "reduce_scatter"):
     if hasattr(dist, _name):
         setattr(dist, _name, _wrap_collective(getattr(dist, _name)))
 from torch.nn.parallel import DistributedDataParallel as DDP
-from torch.utils.data import DataLoader, Dataset  # Added Dataset import
+from torch.utils.data import DataLoader, Dataset
 from torch.utils.data.distributed import DistributedSampler
 from torchvision.datasets import ImageFolder
 from torchvision import transforms
@@ -66,7 +66,6 @@ from datetime import datetime
 # CHANGE 1: Import continuous models instead of regular models
 from vgl.models import DiT_models_continuous as DiT_models
 from vgl.unet_models import UNet_models
-from vgl.unet_models_song import SongUNet_models
 from vgl.diffusion import create_diffusion
 from diffusers.models import AutoencoderKL
 # NEW: Import flow matching utilities
@@ -99,7 +98,6 @@ signal.signal(signal.SIGTERM, signal_handler)  # Termination
 signal.signal(signal.SIGHUP, signal_handler)   # Hangup (terminal disconnect)
 
 
-# CHANGE 2: Add a simple wrapper to convert ImageFolder labels to radius values
 class ImageFolderWithRadius(ImageFolder):
     """Wrapper around ImageFolder that converts class indices to radius values."""
     def __init__(self, root, transform=None, radius_mapping=None, selected_classes=None, max_samples_per_class=None):
@@ -189,7 +187,6 @@ def update_ema(ema_model, model, decay=0.9999):
     model_params = OrderedDict(model.named_parameters())
 
     for name, param in model_params.items():
-        # TODO: Consider applying only to params that require_grad to avoid small numerical changes of pos_embed
         ema_params[name].mul_(decay).add_(param.data, alpha=1 - decay)
 
 
@@ -385,37 +382,20 @@ def main(args):
             null_radius=args.null_radius,
             null_embedding_type=args.null_embedding_type
         )
-    elif args.architecture == "songunet":
-        from vgl.unet_models_song import SongUNet_models
-        model = SongUNet_models[args.model](
-            img_resolution=input_size,
-            in_channels=in_channels,
-            out_channels=in_channels,  # SongUNet doesn't learn sigma by default
-            # learn_sigma defaults to False in SongUNet to match original implementation
-            conditioning_type='radius',
-            radius_embedding_type=args.radius_embedding_type,
-            conditioning_method=args.conditioning_method,
-            radius_dropout_prob=args.radius_dropout_prob,
-        )
     else:
         raise ValueError(f"Unknown architecture: {args.architecture}")
     # Note that parameter initialization is done within the model constructor
     ema = deepcopy(model).to(device)  # Create an EMA of the model for use after training
     requires_grad(ema, False)
-    # Use find_unused_parameters=True for SongUNet to avoid DDP errors
-    # Also needed for learnable null embedding which isn't used when dropout_prob=0
-    needs_unused = args.architecture == "songunet" or args.null_embedding_type == "learnable"
+    # Needed for learnable null embedding which isn't used when dropout_prob=0
+    needs_unused = args.null_embedding_type == "learnable"
     if needs_unused:
         model = DDP(model.to(device), device_ids=[rank], find_unused_parameters=True)
     else:
         model = DDP(model.to(device), device_ids=[rank])
     # Create loss function (either diffusion or flow matching)
-    if args.architecture == "songunet":
-        # SongUNet doesn't learn sigma by default
-        loss_fn = create_loss_function(args, timestep_respacing="", learn_sigma=False)
-    else:
-        # DiT and UNet models learn sigma
-        loss_fn = create_loss_function(args, timestep_respacing="", learn_sigma=True)
+    # DiT and UNet models learn sigma
+    loss_fn = create_loss_function(args, timestep_respacing="", learn_sigma=True)
     
     # Log which objective we're using
     objective_type = "Flow Matching" if getattr(args, 'use_flow_matching', False) else "Diffusion"
@@ -451,7 +431,7 @@ def main(args):
             train_steps = checkpoint.get("train_steps", 0)
             start_epoch = checkpoint.get("epoch", 0) + 1  # Start from next epoch
             
-            # QUICK FIX: If train_steps is 0, try to extract from filename
+            # If train_steps is 0, recover it from the checkpoint filename
             if train_steps == 0:
                 import re
                 # Extract step number from filename like "0020000.pt" or "signal_1_0020000.pt"
@@ -477,7 +457,6 @@ def main(args):
         transforms.ToTensor(),
         transforms.Normalize(mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5], inplace=True)
     ])
-    # CHANGE 5: Use ImageFolderWithRadius instead of ImageFolder
     dataset = ImageFolderWithRadius(args.data_path, transform=transform, selected_classes=args.selected_classes, max_samples_per_class=args.max_samples_per_class)
     sampler = DistributedSampler(
         dataset,
@@ -682,12 +661,11 @@ def main(args):
 
 
 if __name__ == "__main__":
-    # Default args here will train DiT-XL/2 with the hyperparameters we used in our paper (except training iters).
     parser = argparse.ArgumentParser()
     parser.add_argument("--data-path", type=str, required=True)
     parser.add_argument("--results-dir", type=str, default="results")
-    parser.add_argument("--model", type=str, choices=list(DiT_models.keys()) + list(UNet_models.keys()) + list(SongUNet_models.keys()), default="DiT-S/2")
-    parser.add_argument("--architecture", type=str, choices=["dit", "unet", "songunet"], default="dit", help="Model architecture to use")
+    parser.add_argument("--model", type=str, choices=list(DiT_models.keys()) + list(UNet_models.keys()), default="DiT-S/2")
+    parser.add_argument("--architecture", type=str, choices=["dit", "unet"], default="dit", help="Model architecture to use")
     parser.add_argument("--image-size", type=int, choices=[64, 128, 256, 512], default=64)
     parser.add_argument("--num-classes", type=int, default=1000)  # Kept for compatibility but not used
     parser.add_argument("--epochs", type=int, default=1400)
@@ -707,7 +685,7 @@ if __name__ == "__main__":
                         help="Maximum number of samples to use per class (for faster training)")
     # NEW: Add parameter to control diffusion mode
     parser.add_argument("--use-latent-diffusion", action="store_true", default=False,
-                        help="Use VAE latent diffusion (default). Use --no-use-latent-diffusion for direct pixel diffusion")
+                        help="Train in the latent space of the pretrained VAE (default: pixel space)")
     parser.add_argument("--radius-text-table", type=str, default=None,
                         help="Path to a precomputed text-embedding table (required for --radius-embedding-type text).")
     parser.add_argument("--radius-embedding-type", type=str, choices=["sinusoidal", "rotary", "linear", "single_linear", "raw", "text"], default="sinusoidal",

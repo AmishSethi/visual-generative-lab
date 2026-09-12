@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 
 import os as _os
 
@@ -9,7 +10,6 @@ VGL_CONDA_ACTIVATE = _os.environ.get("VGL_CONDA_ACTIVATE", "conda activate vgl")
 # Optional node exclusions for your cluster, e.g. "#SBATCH --exclude=node1,node2"
 VGL_SLURM_EXCLUDE = _os.environ.get("VGL_SLURM_EXCLUDE", "")
 
-#!/usr/bin/env python
 import argparse
 import shlex
 import subprocess
@@ -125,7 +125,7 @@ def build_command(skill, variant, seed):
         "--architecture",
         variant_spec["architecture"],
         "--model",
-        variant_spec["model"],
+        skill_spec.get("unet_model", variant_spec["model"]) if variant == "unet" else variant_spec["model"],
         "--ckpt-every",
         "2000",
         f"--{skill_spec['embedding_flag']}",
