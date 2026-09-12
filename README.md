@@ -82,7 +82,6 @@ Verify:
 
 ```bash
 python -c "import vgl; from vgl.models import DiT_models_continuous as M; print(vgl.__version__, sorted(M))"
-python -m pytest tests/ -q
 ```
 
 ---
@@ -149,7 +148,6 @@ paper_runs/              exact code that produced each paper table
                          latent vs pixel, visually complex renders, text conditioning, the
                          text-to-image probe, and coverage vs K
 
-tests/                   unit tests
 docs/                    extended documentation
 ```
 
