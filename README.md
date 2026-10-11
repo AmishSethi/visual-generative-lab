@@ -15,9 +15,9 @@ three splits:
 
 | split | meaning |
 |---|---|
-| **train** | held-out samples whose skill values appear in training |
-| **interp** | values inside the training range but never seen (e.g. radius 12.5) |
-| **extra** | values outside the training range entirely (e.g. radius 25) |
+| **train** | new samples for skill values that appear in training |
+| **interp** | values inside the training range but never seen |
+| **extra** | values outside the training range entirely |
 
 ---
 
