@@ -15,8 +15,6 @@ samples/
 *.png
 *.jpg
 *.pdf
-!docs/**/*.png
-!docs/**/*.pdf
 
 # SLURM
 slurm/

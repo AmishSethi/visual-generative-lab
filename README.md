@@ -212,8 +212,6 @@ paper_runs/              exact code that produced each paper table
   appendix/              experiments behind the appendix: data scaling, resolution, token-matched
                          latent vs pixel, visually complex renders, text conditioning, the
                          text-to-image probe, and coverage vs K
-
-docs/                    extended documentation
 ```
 
 ---
@@ -283,7 +281,7 @@ python -m paper_runs.table2.evaluate_table2 --skill rotation --variant baseline 
   --checkpoint checkpoints/table2/rotation/baseline/seed_0/final.pt
 ```
 
-See [`docs/CHECKPOINTS.md`](docs/CHECKPOINTS.md) for the mapping from checkpoint to table row.
+See [`CHECKPOINTS.md`](CHECKPOINTS.md) for the mapping from checkpoint to table row.
 
 ---
 
