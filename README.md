@@ -27,7 +27,7 @@ three splits:
    nearly perfectly, and only rotation continues to work far outside it.
 2. **Coverage beats dataset size.** At a fixed image budget, spreading samples across more unique
    skill combinations beats concentrating them on fewer.
-3. **Skills are learned jointly.** An out-of-range request in one skill degrades the others, even
+3. **Skills are learned jointly.** An out-of-range request in one skill can degrade the others, even
    when those remain in range.
 
 ---
@@ -113,8 +113,9 @@ Thresholds are listed under [Evaluation metrics](#evaluation-metrics).
   </tbody>
 </table>
 
-Every skill reaches ~100% on its training support and drops sharply outside it. Scaling to DiT-L
-(~306M parameters, 14× the baseline) does not repair extrapolation.
+The baseline reaches ~100% on every skill's training support, and only rotation extrapolates well
+beyond it. Scaling to DiT-L (~306M parameters, 14× the baseline) improves count extrapolation but
+not size or rotation.
 
 Reproduce this table with [`paper_runs/table2/`](paper_runs/table2) — see
 [Reproducing paper results](#reproducing-paper-results).
