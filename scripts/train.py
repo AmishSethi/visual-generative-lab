@@ -63,12 +63,11 @@ import sys
 import json
 from datetime import datetime
 
-# CHANGE 1: Import continuous models instead of regular models
+# DiT with continuous (scalar) conditioning
 from vgl.models import DiT_models_continuous as DiT_models
 from vgl.unet_models import UNet_models
 from vgl.diffusion import create_diffusion
 from diffusers.models import AutoencoderKL
-# NEW: Import flow matching utilities
 from vgl.flow_matching import create_loss_function, add_flow_matching_args
 from vgl.reproducibility_utils import (
     configure_reproducibility,
@@ -320,7 +319,6 @@ def main(args):
         else:
             experiment_index = len(glob(f"{args.results_dir}/*"))
             model_string_name = args.model.replace("/", "-")  # e.g., DiT-XL/2 --> DiT-XL-2 (for naming folders)
-            # CHANGE 3: Add "continuous" to experiment name
             experiment_dir = f"{args.results_dir}/{experiment_index:03d}-{model_string_name}-continuous"  # Create an experiment folder
             checkpoint_dir = f"{experiment_dir}/checkpoints"  # Stores saved model checkpoints
             os.makedirs(checkpoint_dir, exist_ok=True)
@@ -343,11 +341,11 @@ def main(args):
             checkpoint_dir = os.path.join(experiment_dir, "checkpoints")
 
     # Create model:
-    # NEW: Only require image size divisible by 8 for latent diffusion
+    # Only latent diffusion requires an image size divisible by 8
     if args.use_latent_diffusion:
         assert args.image_size % 8 == 0, "Image size must be divisible by 8 (for the VAE encoder)."
     
-    # NEW: Determine input size and channels based on diffusion mode
+    # Determine input size and channels based on diffusion mode
     if args.use_latent_diffusion:
         # Latent diffusion: use VAE compressed latents
         input_size = args.image_size // 8
@@ -359,7 +357,6 @@ def main(args):
         in_channels = 3  # RGB channels
         logger.info(f"Using direct pixel diffusion: input_size={input_size}, in_channels={in_channels}")
     
-    # CHANGE 4: Model doesn't need num_classes argument (it's ignored in continuous model)
     # Select model based on architecture
     if args.architecture == "dit":
         model = DiT_models[args.model](
@@ -401,7 +398,7 @@ def main(args):
     objective_type = "Flow Matching" if getattr(args, 'use_flow_matching', False) else "Diffusion"
     logger.info(f"Using {objective_type} training objective")
     
-    # NEW: Only load VAE if using latent diffusion
+    # Only load the VAE for latent diffusion
     vae = None
     if args.use_latent_diffusion:
         vae = AutoencoderKL.from_pretrained(f"stabilityai/sd-vae-ft-{args.vae}").to(device)
@@ -485,7 +482,6 @@ def main(args):
         drop_last=True
     )
     logger.info(f"Dataset contains {len(dataset):,} images ({args.data_path})")
-    # CHANGE 6: Log radius mapping
     logger.info(f"Radius mapping: {dataset.radius_mapping}")
     logger.info(
         "Effective global batch size: %d (micro batch %d x world_size %d x grad_accum_steps %d)",
@@ -525,7 +521,6 @@ def main(args):
             accum_loss = 0.0
             accum_steps = 0
             
-            # CHANGE 7: Rename y to r (radius)
             for batch_idx, (x, r) in enumerate(loader):
                 if should_stop:
                     logger.info("Stopping training due to signal...")
@@ -534,9 +529,9 @@ def main(args):
                 x = x.to(device)
                 x = x.contiguous()
 
-                r = r.to(device)  # This is now radius values, not class indices
+                r = r.to(device)  # radius values
                 
-                # NEW: Handle input based on diffusion mode
+                # Handle input based on diffusion mode
                 if args.use_latent_diffusion:
                     # Latent diffusion: encode to VAE latents
                     with torch.no_grad():
@@ -552,10 +547,9 @@ def main(args):
                     # Flow matching: timesteps are sampled internally, pass dummy timesteps
                     t = torch.zeros(x.shape[0], device=device)
                 
-                # CHANGE 8: Pass r (radius) instead of y (class) in model_kwargs
                 model_kwargs = dict(r=r)
                 
-                # CHANGE 9: Use training_losses function (works for both diffusion and flow matching)
+                # training_losses works for both diffusion and flow matching
                 loss_dict = loss_fn.training_losses(model, x, t, model_kwargs)
                 loss = loss_dict["loss"].mean()
                 
@@ -683,7 +677,6 @@ if __name__ == "__main__":
                         help="List of radius classes to train on (e.g., 1 2 3 4 for whole numbers, 1.5 2.5 3.5 for decimals, or omit for all classes)")
     parser.add_argument("--max-samples-per-class", type=int, default=None,
                         help="Maximum number of samples to use per class (for faster training)")
-    # NEW: Add parameter to control diffusion mode
     parser.add_argument("--use-latent-diffusion", action="store_true", default=False,
                         help="Train in the latent space of the pretrained VAE (default: pixel space)")
     parser.add_argument("--radius-text-table", type=str, default=None,
