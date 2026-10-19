@@ -1,7 +1,7 @@
 # Pretrained checkpoints
 
-Checkpoints are not stored in this repository. Every result in the paper can be reproduced from
-scratch with the commands in the main README; the checkpoints are provided so you can skip training.
+Checkpoints are not stored in this repository. The training commands are in the main README; the
+checkpoints are provided so you can skip training.
 
 ## Download
 
@@ -24,7 +24,9 @@ checkpoints/
 ```
 
 `skill` ∈ {size, position, rotation, count}; `variant` is a row of the results table
-(`baseline`, `sinusoidal`, `rotary`, `adaln`, `vae`, `flow`, `unet`, `dit_large`).
+(`baseline`, `sinusoidal`, `rotary`, `adaln`, `vae`, `flow`, `unet`, `dit_large`). Rotation also has
+`baseline_nz` (seeds 0-9), `baseline_nz_warmstart` (seeds 100-104) and
+`{sinusoidal,rotary,adaln,vae,flow,unet}_nz`.
 
 Each file contains `model`, `ema`, `opt`, `train_steps` and `epoch`. Evaluation uses the **EMA** weights.
 
