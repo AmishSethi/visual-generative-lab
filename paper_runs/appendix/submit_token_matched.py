@@ -75,6 +75,7 @@ export CUDA_DEVICE_ORDER=PCI_BUS_ID
 cd {repo}
 {conda}
 """
+HEADER = HEADER.replace("{VGL_SLURM_EXCLUDE}", VGL_SLURM_EXCLUDE)
 
 
 def write(path, body):
