@@ -13,4 +13,3 @@ diffusers==0.34.0
 accelerate
 tqdm
 huggingface_hub
-pytest

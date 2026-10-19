@@ -63,7 +63,6 @@ from datetime import datetime
 from vgl.reproducibility_utils import write_run_config
 from vgl.models_compositional import DiT_models_compositional as DiT_models
 from vgl.diffusion import create_diffusion
-# NEW: Import flow matching utilities
 from vgl.flow_matching import create_loss_function, add_flow_matching_args
 
 # Global variable for graceful shutdown

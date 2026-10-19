@@ -63,7 +63,6 @@ from vgl.models_position import DiT_models_position as DiT_models
 from vgl.unet_models_position import UNet_models_position as UNet_models
 from vgl.diffusion import create_diffusion
 from diffusers.models import AutoencoderKL
-# NEW: Import flow matching utilities
 from vgl.flow_matching import create_loss_function, add_flow_matching_args
 from vgl.reproducibility_utils import (
     configure_reproducibility,
@@ -541,7 +540,7 @@ def main(args):
                 x = x.to(device)
                 x = x.contiguous()
 
-                pos = pos.to(device)  # This is now position coordinates (N, 2)
+                pos = pos.to(device)  # position coordinates (N, 2)
                 
                 # Handle input based on diffusion mode
                 if args.use_latent_diffusion:

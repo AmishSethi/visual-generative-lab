@@ -15,9 +15,9 @@ three splits:
 
 | split | meaning |
 |---|---|
-| **train** | held-out samples whose skill values appear in training |
-| **interp** | values inside the training range but never seen (e.g. radius 12.5) |
-| **extra** | values outside the training range entirely (e.g. radius 25) |
+| **train** | new samples for skill values that appear in training |
+| **interp** | values inside the training range but never seen |
+| **extra** | values outside the training range entirely |
 
 ---
 
@@ -27,7 +27,7 @@ three splits:
    nearly perfectly, and only rotation continues to work far outside it.
 2. **Coverage beats dataset size.** At a fixed image budget, spreading samples across more unique
    skill combinations beats concentrating them on fewer.
-3. **Skills are learned jointly.** An out-of-range request in one skill degrades the others, even
+3. **Skills are learned jointly.** An out-of-range request in one skill can degrade the others, even
    when those remain in range.
 
 ---
@@ -37,19 +37,85 @@ three splits:
 Accuracy (%) on the four numeric skills, mean over seeds.
 Thresholds are listed under [Evaluation metrics](#evaluation-metrics).
 
-| Model | size train | size extra | pos train | pos extra | rot train | rot extra | count train | count extra |
-|---|--:|--:|--:|--:|--:|--:|--:|--:|
-| **DiT-S/2 (baseline)** | 100.0 | 47.3 | 100.0 | 31.0 | 100.0 | 68.0 | 99.7 | 34.6 |
-| + sinusoidal emb. | 100.0 | 7.1 | 100.0 | 0.0 | 99.7 | 26.6 | 99.2 | 19.2 |
-| + rotary emb. | 100.0 | 10.4 | 100.0 | 0.0 | 100.0 | 37.6 | 99.7 | 34.2 |
-| + AdaLN | 100.0 | 31.4 | 100.0 | 63.6 | 100.0 | 58.5 | 99.7 | 45.0 |
-| + VAE latent | 82.8 | 6.1 | 99.8 | 0.1 | 99.9 | 21.2 | 66.9 | 45.8 |
-| + flow matching | 49.5 | 24.0 | 100.0 | 12.1 | 100.0 | 57.8 | 10.3 | 5.0 |
-| + U-Net (capacity-matched) | 100.0 | 19.9 | 100.0 | 50.0 | 99.7 | 11.2 | 100.0 | 66.7 |
-| + DiT-L (capacity scaling) | 100.0 | 40.4 | 100.0 | 32.8 | 100.0 | 30.1 | 100.0 | 63.3 |
+<table>
+  <thead>
+    <tr>
+      <th rowspan="2">Model</th>
+      <th colspan="2">size</th>
+      <th colspan="2">pos</th>
+      <th colspan="2">rot</th>
+      <th colspan="2">count</th>
+    </tr>
+    <tr>
+      <th>train</th><th>extra</th>
+      <th>train</th><th>extra</th>
+      <th>train</th><th>extra</th>
+      <th>train</th><th>extra</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><strong>DiT-S/2 (baseline)</strong></td>
+      <td>100.0</td><td>47.3</td>
+      <td>100.0</td><td>31.0</td>
+      <td>100.0</td><td>68.0</td>
+      <td>99.7</td><td>34.6</td>
+    </tr>
+    <tr>
+      <td>+ sinusoidal emb.</td>
+      <td>100.0</td><td>7.1</td>
+      <td>100.0</td><td>0.0</td>
+      <td>100.0</td><td>26.6</td>
+      <td>99.2</td><td>19.2</td>
+    </tr>
+    <tr>
+      <td>+ rotary emb.</td>
+      <td>100.0</td><td>10.4</td>
+      <td>100.0</td><td>0.0</td>
+      <td>100.0</td><td>37.6</td>
+      <td>99.7</td><td>34.2</td>
+    </tr>
+    <tr>
+      <td>+ AdaLN</td>
+      <td>100.0</td><td>31.4</td>
+      <td>100.0</td><td>63.6</td>
+      <td>100.0</td><td>58.5</td>
+      <td>99.7</td><td>45.0</td>
+    </tr>
+    <tr>
+      <td>+ VAE latent</td>
+      <td>82.8</td><td>6.1</td>
+      <td>99.8</td><td>0.1</td>
+      <td>100.0</td><td>21.2</td>
+      <td>66.9</td><td>45.8</td>
+    </tr>
+    <tr>
+      <td>+ flow matching</td>
+      <td>49.5</td><td>24.0</td>
+      <td>100.0</td><td>12.1</td>
+      <td>100.0</td><td>57.8</td>
+      <td>10.3</td><td>5.0</td>
+    </tr>
+    <tr>
+      <td>+ U-Net (capacity-matched)</td>
+      <td>100.0</td><td>19.9</td>
+      <td>100.0</td><td>50.0</td>
+      <td>100.0</td><td>11.2</td>
+      <td>99.7</td><td>72.5</td>
+    </tr>
+    <tr>
+      <td>+ DiT-L (capacity scaling)</td>
+      <td>100.0</td><td>42.5</td>
+      <td>100.0</td><td>32.8</td>
+      <td>100.0</td><td>62.0</td>
+      <td>100.0</td><td>63.3</td>
+    </tr>
+  </tbody>
+</table>
 
-Every skill reaches ~100% on its training support and drops sharply outside it. Scaling to DiT-L
-(~306M parameters, 14× the baseline) does not repair extrapolation.
+The baseline reaches ~100% on every skill's training support, and only rotation extrapolates well
+beyond it. Scaling to DiT-L (~306M parameters, 14× the baseline) improves count extrapolation but
+not size or rotation.
 
 Reproduce this table with [`paper_runs/table2/`](paper_runs/table2) — see
 [Reproducing paper results](#reproducing-paper-results).
@@ -82,7 +148,6 @@ Verify:
 
 ```bash
 python -c "import vgl; from vgl.models import DiT_models_continuous as M; print(vgl.__version__, sorted(M))"
-python -m pytest tests/ -q
 ```
 
 ---
@@ -148,9 +213,6 @@ paper_runs/              exact code that produced each paper table
   appendix/              experiments behind the appendix: data scaling, resolution, token-matched
                          latent vs pixel, visually complex renders, text conditioning, the
                          text-to-image probe, and coverage vs K
-
-tests/                   unit tests
-docs/                    extended documentation
 ```
 
 ---
@@ -220,7 +282,7 @@ python -m paper_runs.table2.evaluate_table2 --skill rotation --variant baseline 
   --checkpoint checkpoints/table2/rotation/baseline/seed_0/final.pt
 ```
 
-See [`docs/CHECKPOINTS.md`](docs/CHECKPOINTS.md) for the mapping from checkpoint to table row.
+See [`CHECKPOINTS.md`](CHECKPOINTS.md) for the mapping from checkpoint to table row.
 
 ---
 

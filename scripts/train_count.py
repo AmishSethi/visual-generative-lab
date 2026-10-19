@@ -543,7 +543,7 @@ def main(args):
                 x = x.to(device)
                 x = x.contiguous()
 
-                c = c.to(device)  # This is now count values, not class indices
+                c = c.to(device)  # count values
                 
                 # Handle input based on diffusion mode
                 if args.use_latent_diffusion:

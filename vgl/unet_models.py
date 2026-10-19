@@ -767,7 +767,7 @@ def UNet_B(**kwargs):
     )
 
 def UNet_M(**kwargs):
-    """24.9M-parameter U-Net used for the count row of the architecture ablation."""
+    """24.9M-parameter U-Net."""
     return UNet_Continuous(
         down_channels=[48, 96, 192, 384],
         mid_channels=[384, 384, 192],

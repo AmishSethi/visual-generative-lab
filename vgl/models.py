@@ -53,7 +53,7 @@ class RadiusEmbedder(nn.Module):
     """
     def __init__(self, hidden_size, frequency_embedding_size=256, embedding_type="sinusoidal",
                  max_period=10000, dropout_prob=0.0, null_radius=0.0,
-                 null_embedding_type="learnable",  # NEW: "zero", "learnable", or "none"
+                 null_embedding_type="learnable",  # "zero", "learnable", or "none"
                  text_table_path=None):
         super().__init__()
         self.max_period = max_period
@@ -62,7 +62,7 @@ class RadiusEmbedder(nn.Module):
         self.null_radius = null_radius
         self.null_embedding_type = null_embedding_type  # NEW
         
-        # NEW: Learnable null embedding (before MLP) - only needed for "learnable" type
+        # Learnable null embedding (before MLP), only needed for the "learnable" type
         if null_embedding_type == "learnable":
             if embedding_type in ["single_linear", "raw"]:
                 # For single_linear and raw, we need a learnable null embedding of hidden_size
@@ -152,10 +152,10 @@ class RadiusEmbedder(nn.Module):
             print(f"Warning: NaN/Inf in radius input: {r}")
             r = torch.nan_to_num(r, nan=1.0, posinf=100.0, neginf=0.0)
         
-        # NEW: Check for null radii
+        # Check for null radii
         is_null = (r == self.null_radius)
         
-        # NEW: If null_embedding_type is "none", return zeros for null radii
+        # If null_embedding_type is "none", return zeros for null radii
         if self.null_embedding_type == "none" and is_null.any():
             # Create output tensor
             batch_size = r.shape[0]
@@ -391,7 +391,7 @@ class DiT_Continuous(nn.Module):
         conditioning_method="adaln",  # "adaln" or "concat"
         radius_dropout_prob=0.0,  # CFG dropout probability
         null_radius=0.0,  # Null radius for unconditional generation
-        null_embedding_type="learnable",  # NEW: "zero" or "learnable"
+        null_embedding_type="learnable",  # "zero" or "learnable"
         radius_text_table=None  # path to a precomputed text-embedding table
     ):
         super().__init__()

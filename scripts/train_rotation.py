@@ -31,7 +31,6 @@ from vgl.models_rotation import DiT_models_rotation as DiT_models
 from vgl.unet_models_rotation import UNet_models_rotation as UNet_models
 from vgl.diffusion import create_diffusion
 from diffusers.models import AutoencoderKL
-# NEW: Import flow matching utilities
 from vgl.flow_matching import create_loss_function, add_flow_matching_args
 from vgl.reproducibility_utils import (
     configure_reproducibility,
