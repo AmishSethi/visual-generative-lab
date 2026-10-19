@@ -15,6 +15,12 @@ python paper_runs/table2/generate_canonical_datasets.py --force
 python paper_runs/table2/submit_training.py --submit
 ```
 
+The rotation baseline cell of Table 2 is `baseline_nz` over seeds 0-9:
+
+```bash
+python paper_runs/table2/submit_baseline_nz_extra_seeds.py --seeds 0 1 2 3 4 5 6 7 8 9 --submit
+```
+
 To restrict submission to a subset:
 
 ```bash

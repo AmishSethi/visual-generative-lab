@@ -24,6 +24,9 @@ EVAL_SLURM_ROOT = EVAL_ROOT / "slurm"
 EVAL_LOG_ROOT = EVAL_ROOT / "logs"
 
 CANONICAL_SEEDS = (0, 1, 2)
+# Table 2's rotation baseline is baseline_nz over seeds 0-9 (submit_baseline_nz_extra_seeds.py);
+# rotation/baseline (3 seeds) is the ablation-matched baseline.
+BASELINE_OVERRIDES = {"rotation": ("baseline_nz", tuple(range(10)))}
 DATASET_SEED = 42
 EVAL_NUM_SAMPLES = 20
 EVAL_NUM_SAMPLING_STEPS = 250

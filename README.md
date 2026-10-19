@@ -230,7 +230,10 @@ the code that produced the published numbers.
 ```bash
 # Table 2: single-skill generalization, all skills x all variants x 3 seeds
 python -m paper_runs.table2.submit_training --skills size position rotation count --seeds 0 1 2
+# the rotation baseline cell is baseline_nz over seeds 0-9
+python -m paper_runs.table2.submit_baseline_nz_extra_seeds --seeds 0 1 2 3 4 5 6 7 8 9
 python -m paper_runs.table2.evaluate_table2 --skill size --variant baseline --seed 0
+python -m paper_runs.table2.evaluate_table2 --skill rotation --variant baseline_nz --seed 0
 python -m paper_runs.table2.aggregate_table2
 
 # Table 3: compositional generalization
@@ -275,14 +278,14 @@ Hugging Face Hub at [ASethi04/vgl-checkpoints](https://huggingface.co/ASethi04/v
 `table2/<skill>/<variant>/seed_<n>/final.pt` with each run's `run_config.json` beside it:
 
 ```bash
-huggingface-cli download ASethi04/vgl-checkpoints --include "table2/rotation/baseline/*" --local-dir checkpoints
+huggingface-cli download ASethi04/vgl-checkpoints --include "table2/rotation/baseline_nz/*" --local-dir checkpoints
 ```
 
 To evaluate a downloaded checkpoint with the paper's protocol, point the evaluator at it:
 
 ```bash
-python -m paper_runs.table2.evaluate_table2 --skill rotation --variant baseline --seed 0 \
-  --checkpoint checkpoints/table2/rotation/baseline/seed_0/final.pt
+python -m paper_runs.table2.evaluate_table2 --skill rotation --variant baseline_nz --seed 0 \
+  --checkpoint checkpoints/table2/rotation/baseline_nz/seed_0/final.pt
 ```
 
 See [`CHECKPOINTS.md`](CHECKPOINTS.md) for the mapping from checkpoint to table row.

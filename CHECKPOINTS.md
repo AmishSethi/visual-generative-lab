@@ -10,7 +10,7 @@ Hosted on the Hugging Face Hub: **https://huggingface.co/ASethi04/vgl-checkpoint
 ```bash
 pip install -U huggingface_hub
 # one cell of Table 2 (rotation baseline, all seeds)
-huggingface-cli download ASethi04/vgl-checkpoints --include "table2/rotation/baseline/*" --local-dir checkpoints
+huggingface-cli download ASethi04/vgl-checkpoints --include "table2/rotation/baseline_nz/*" --local-dir checkpoints
 # everything (98 GB)
 huggingface-cli download ASethi04/vgl-checkpoints --local-dir checkpoints
 ```
@@ -32,7 +32,7 @@ Each file contains `model`, `ema`, `opt`, `train_steps` and `epoch`. Evaluation 
 
 | README row | `variant` | notes |
 |---|---|---|
-| DiT-S/2 (baseline) | `baseline` | linear embedding, concat conditioning, pixel space, DDPM |
+| DiT-S/2 (baseline) | `baseline` | linear embedding, concat conditioning, pixel space, DDPM; for rotation the table uses `baseline_nz` (seeds 0-9) |
 | + sinusoidal emb. | `sinusoidal` | |
 | + rotary emb. | `rotary` | |
 | + AdaLN | `adaln` | AdaLN-Zero instead of concatenation |

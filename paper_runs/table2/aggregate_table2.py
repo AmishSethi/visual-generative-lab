@@ -13,7 +13,9 @@ import numpy as np
 if __package__ in (None, ""):
     sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
-from paper_runs.table2.manifest import CANONICAL_SEEDS, EVAL_ROOT, SKILLS, TABLE_ROWS, VARIANTS
+from paper_runs.table2.manifest import (
+    BASELINE_OVERRIDES, CANONICAL_SEEDS, EVAL_ROOT, SKILLS, TABLE_ROWS, VARIANTS,
+)
 
 
 SPLIT_COLUMN_NAMES = {
@@ -42,10 +44,13 @@ def collect_variant_means(eval_root: Path) -> tuple[dict, list[dict]]:
 
     for skill in SKILLS:
         for variant in VARIANTS:
+            source, seeds = variant, CANONICAL_SEEDS
+            if variant == "baseline" and skill in BASELINE_OVERRIDES:
+                source, seeds = BASELINE_OVERRIDES[skill]
             seed_results = []
             missing_seeds = []
-            for seed in CANONICAL_SEEDS:
-                path = result_path(eval_root, skill, variant, seed)
+            for seed in seeds:
+                path = result_path(eval_root, skill, source, seed)
                 if not path.exists():
                     missing_seeds.append(seed)
                     continue
@@ -53,7 +58,7 @@ def collect_variant_means(eval_root: Path) -> tuple[dict, list[dict]]:
                 seed_results.append(payload["paper_metrics"]["splits"])
 
             if missing_seeds:
-                missing.append({"skill": skill, "variant": variant, "missing_seeds": missing_seeds})
+                missing.append({"skill": skill, "variant": source, "missing_seeds": missing_seeds})
                 continue
 
             for split_name in ("train", "interp", "extra"):
