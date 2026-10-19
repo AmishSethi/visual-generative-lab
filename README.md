@@ -101,13 +101,13 @@ Thresholds are listed under [Evaluation metrics](#evaluation-metrics).
       <td>100.0</td><td>19.9</td>
       <td>100.0</td><td>50.0</td>
       <td>100.0</td><td>11.2</td>
-      <td>100.0</td><td>66.7</td>
+      <td>99.7</td><td>72.5</td>
     </tr>
     <tr>
       <td>+ DiT-L (capacity scaling)</td>
       <td>100.0</td><td>42.5</td>
       <td>100.0</td><td>32.8</td>
-      <td>100.0</td><td>30.1</td>
+      <td>100.0</td><td>62.0</td>
       <td>100.0</td><td>63.3</td>
     </tr>
   </tbody>
