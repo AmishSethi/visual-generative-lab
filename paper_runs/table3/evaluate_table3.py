@@ -67,7 +67,7 @@ def _load_compositional_model(ckpt_path: str, properties: list[str], device: tor
     )
     checkpoint = torch.load(ckpt_path, map_location=device, weights_only=False)
     state_dict = checkpoint.get("model", checkpoint.get("ema", checkpoint))
-    model.load_state_dict(state_dict, strict=False)
+    model.load_state_dict(state_dict, strict=True)
     model = model.to(device)
     model.eval()
     print(f"Loaded model weights (non-EMA) from {ckpt_path}")
