@@ -279,9 +279,6 @@ def build_common_run_metadata(selection: RunSelection) -> tuple[dict, dict]:
     if is_latent and "vae" not in folder_name.lower():
         folder_name = f"vae_{folder_name}"
     model = run_args["model"]
-    if "count_embedding_type" in run_args and run_args["architecture"] == "unet" and model == "UNet-DiT-S2-matched":
-        # In the count U-Net checkpoints this name denotes the 24.9M-parameter U-Net registered as UNet-M.
-        model = "UNet-M"
     return run_args, {
         "folder_name": folder_name,
         "architecture": run_args["architecture"],
