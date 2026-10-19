@@ -694,7 +694,8 @@ if __name__ == "__main__":
     # Property embedding settings
     parser.add_argument("--radius-embedding-type", type=str, choices=["sinusoidal", "linear"], default="linear")
     parser.add_argument("--position-embedding-type", type=str, choices=["sinusoidal", "linear"], default="linear")
-    parser.add_argument("--rotation-embedding-type", type=str, choices=["sinusoidal", "linear"], default="linear")
+    parser.add_argument("--rotation-embedding-type", type=str, choices=["sinusoidal", "linear"], default="linear",
+                        help="Not used: the compositional model always uses its default (sinusoidal) rotation embedding.")
 
     
     # Conditioning settings
