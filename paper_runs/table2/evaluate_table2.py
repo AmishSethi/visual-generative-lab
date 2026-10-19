@@ -46,6 +46,8 @@ from paper_runs.table2.manifest import DATASET_ROOT, EVAL_ROOT, RESULTS_ROOT, TA
 SIZE_IOU_THRESHOLD = 0.90
 POSITION_ERROR_THRESHOLD = 2.0
 ROTATION_ERROR_THRESHOLD = 5.0
+# results.json also reports rotation accuracy at each of these (the appendix per-seed table uses 2).
+ROTATION_REPORT_THRESHOLDS = (2.0, 5.0)
 
 
 def calculate_rotation_metrics_robust(
@@ -517,6 +519,7 @@ def evaluate_rotation_split(
 ) -> dict:
     total = 0
     successes = 0
+    successes_at = {threshold: 0 for threshold in ROTATION_REPORT_THRESHOLDS}
     abs_errors = []
     detection_successes = 0
     condition_accuracies = {}
@@ -533,6 +536,8 @@ def evaluate_rotation_split(
             success = detected and metrics["angle_error_abs"] <= ROTATION_ERROR_THRESHOLD
             split_successes += int(success)
             successes += int(success)
+            for threshold in successes_at:
+                successes_at[threshold] += int(detected and metrics["angle_error_abs"] <= threshold)
             split_detection += int(detected)
             detection_successes += int(detected)
             total += 1
@@ -553,6 +558,10 @@ def evaluate_rotation_split(
         "detection_rate": 100.0 * detection_successes / total if total else 0.0,
         "mean_abs_angle_error": float(np.mean(abs_errors)) if abs_errors else float("inf"),
         "threshold": ROTATION_ERROR_THRESHOLD,
+        "accuracy_at_threshold": {
+            f"{threshold:g}": 100.0 * hits / total if total else 0.0
+            for threshold, hits in successes_at.items()
+        },
         "condition_accuracies": condition_accuracies,
     }
 
