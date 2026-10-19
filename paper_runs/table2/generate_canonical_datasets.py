@@ -285,13 +285,22 @@ def generate_count_dataset(output_dir, spec):
         for sample_idx in range(class_counts[count]):
             image = Image.new("RGB", (spec["image_size"], spec["image_size"]), background_color(rng))
             draw = ImageDraw.Draw(image)
-            centers = lattice_centers(
-                count=count,
-                radius=spec["circle_radius"],
-                gap=spec["lattice_gap"],
-                image_size=spec["image_size"],
-                rng=rng,
-            )
+            if "lattice_gap" in spec:
+                centers = lattice_centers(
+                    count=count,
+                    radius=spec["circle_radius"],
+                    gap=spec["lattice_gap"],
+                    image_size=spec["image_size"],
+                    rng=rng,
+                )
+            else:
+                # Packed random placement, used by the appendix count datasets.
+                centers = sample_non_overlapping_centers(
+                    count=count,
+                    radius=spec["circle_radius"],
+                    image_size=spec["image_size"],
+                    rng=rng,
+                )
             for center_x, center_y in centers:
                 fill_rgb = foreground_color(rng)
                 bbox = [
