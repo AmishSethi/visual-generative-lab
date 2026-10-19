@@ -138,6 +138,9 @@ pip install -r requirements.txt
 pip install -e .
 ```
 
+The text-encoder and text-to-image appendix scripts (`paper_runs/appendix/build_text_tables.py`,
+`t2i_*.py`) run in a separate environment: `pip install -r requirements-appendix.txt`.
+
 Set the storage root for datasets, checkpoints and results (defaults to `~/vgl-data`):
 
 ```bash

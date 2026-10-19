@@ -1,0 +1,13 @@
+# Optional, separate environment for the text-encoder and text-to-image appendix scripts:
+#   paper_runs/appendix/build_text_tables.py, t2i_generate.py, t2i_score.py, t2i_analyze.py
+# Versions below are the ones those scripts ran with. Nothing else in the repository needs them.
+torch==2.7.1
+diffusers==0.39.0
+transformers==4.54.0
+accelerate==1.9.0
+sentencepiece==0.2.2
+protobuf==6.31.1
+numpy
+pillow
+opencv-python
+tqdm
