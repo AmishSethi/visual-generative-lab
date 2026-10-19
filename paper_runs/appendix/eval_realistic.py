@@ -44,6 +44,9 @@ SIZE_IOU_THRESHOLD = 0.90
 POSITION_ERROR_THRESHOLD = 2.0
 ROTATION_ERROR_THRESHOLD = 5.0
 MIN_BLOB_AREA = 30
+# Extrapolation grids: radii 1-4 and 21-25, positions from the training boundary.
+SIZE_EXTRAP_MIN, SIZE_EXTRAP_MAX = 1, 25
+POSITION_EXTRAP_MARGIN, POSITION_EXTRAP_MIN_MARGIN = 6.0, 0.0
 
 
 def disc_mask(radius, cx=0.0, cy=0.0, size=IMAGE_SIZE):
@@ -151,13 +154,14 @@ def evaluate(skill, seed, num_samples, steps, batch_size, max_conditions, device
     selection = t2.latest_finished_run(skill, "", seed)
 
     if skill == "size":
-        queries, config = t2.build_size_queries(metadata), t2.build_size_config(selection)
+        queries = t2.build_size_queries(metadata, SIZE_EXTRAP_MIN, SIZE_EXTRAP_MAX)
+        config = t2.build_size_config(selection)
         load, gen = load_radius_model, generate_radius_samples
     elif skill == "count":
         queries, config = t2.build_count_queries(metadata), t2.build_count_config(selection)
         load, gen = load_radius_model, generate_radius_samples
     elif skill == "position":
-        queries = t2.build_position_queries(metadata)
+        queries = t2.build_position_queries(metadata, POSITION_EXTRAP_MARGIN, POSITION_EXTRAP_MIN_MARGIN)
         config = t2.build_position_config(selection, metadata)
         from vgl.eval_position import (generate_samples as gen_pos, load_model as load_pos)
         load, gen = load_pos, gen_pos

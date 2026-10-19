@@ -33,10 +33,11 @@ class EvalArgs:
         self.num_sampling_steps = steps
         self.eval_batch_size = batch_size
         self.max_conditions_per_split = max_conditions
-        self.size_extrap_min = t2.SIZE_EXTRAP_MIN
-        self.size_extrap_max = t2.SIZE_EXTRAP_MAX
-        self.position_extrap_margin = t2.POSITION_EXTRAP_MARGIN
-        self.position_extrap_min_margin = t2.POSITION_EXTRAP_MIN_MARGIN
+        # The data-scaling grid: radii 1-4 and 21-25, positions from the training boundary.
+        self.size_extrap_min = 1
+        self.size_extrap_max = 25
+        self.position_extrap_margin = 6.0
+        self.position_extrap_min_margin = 0.0
 
 
 def main():

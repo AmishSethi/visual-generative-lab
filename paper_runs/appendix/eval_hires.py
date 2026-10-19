@@ -51,11 +51,12 @@ class EvalArgs:
         self.num_sampling_steps = steps
         self.eval_batch_size = batch_size
         self.max_conditions_per_split = max_conditions
-        # 2x the paper's 64x64 extrapolation grid (1..4 and 21..30 -> 2..8, 42..60)
+        # Radii 2..9 and 41..60 around the 10..40 training range
         self.size_extrap_min = 2
         self.size_extrap_max = 30 * RES_SCALE
-        self.position_extrap_margin = t2.POSITION_EXTRAP_MARGIN * RES_SCALE
-        self.position_extrap_min_margin = t2.POSITION_EXTRAP_MIN_MARGIN * RES_SCALE
+        # Positions from the training boundary, as the 128x128 table was scored.
+        self.position_extrap_margin = 6.0 * RES_SCALE
+        self.position_extrap_min_margin = 0.0
 
 
 def main():
