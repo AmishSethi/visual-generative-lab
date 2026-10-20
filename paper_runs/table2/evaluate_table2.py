@@ -381,7 +381,7 @@ def build_rotation_config(selection: RunSelection, metadata: dict) -> dict:
 
 def create_sampler(config: dict, num_sampling_steps: int):
     if config.get("use_flow_matching", False):
-        return FlowMatching(sigma_min=0.0, sigma_data=1.0, use_sigmoid_time=True)
+        return FlowMatching(sigma_min=0.0, sigma_data=1.0, use_sigmoid_time=False)
     return create_diffusion(str(num_sampling_steps))
 
 
