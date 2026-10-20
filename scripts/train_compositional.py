@@ -157,7 +157,7 @@ class ImageFolderWithComposition(ImageFolder):
                     part_idx = 0
                     
                     # Parse radius (r6p0 -> 6.0, r7p6 -> 7.6)
-                    if part_idx < len(parts) and parts[part_idx].startswith('r'):
+                    if part_idx < len(parts) and parts[part_idx].startswith('r') and parts[part_idx][1:2].isdigit():
                         radius_str = parts[part_idx][1:]  # Remove 'r'
                         radius_str = radius_str.replace('p', '.')
                         properties['radius'] = float(radius_str)
