@@ -199,7 +199,7 @@ def generate_property_values_coverage(include_properties=None):
         property_values['count'] = [1, 2, 3, 4]
     
     if 'rotation' in include_properties:
-        property_values['rotation'] = [0, 45, 90, 135, 180, 225, 270, 315]
+        property_values['rotation'] = [0, 15, 30, 45, 135, 225, 315, 330, 345]
     
     return property_values, include_properties
 
@@ -246,9 +246,9 @@ def create_coverage_based_splits(property_values, include_properties, coverage=0
                 holdout_property_values[prop] = prop_values[-5:]
                 print(f"  {prop} (continuous): Training on {len(train_property_values[prop])} positions, holdout {len(holdout_property_values[prop])}")
             elif prop == 'rotation':
-                # Hold out diagonal angles
-                train_property_values[prop] = [0, 90, 180, 270]
-                holdout_property_values[prop] = [45, 135, 225, 315]
+                # Train inside the single-skill rotation domain (45-315 deg); hold out angles outside it
+                train_property_values[prop] = [45, 135, 225, 315]
+                holdout_property_values[prop] = [0, 15, 30, 330, 345]
                 print(f"  {prop} (continuous): Training on {train_property_values[prop]}, holdout {holdout_property_values[prop]}")
             elif prop == 'count':
                 # Hold out highest count for extrapolation
