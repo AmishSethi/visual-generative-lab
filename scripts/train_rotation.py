@@ -636,7 +636,7 @@ if __name__ == "__main__":
     parser.add_argument("--rotation-text-table", type=str, default=None,
                         help="Precomputed CLIP text-embedding table; required for --rotation-embedding-type text")
     parser.add_argument("--rotation-embedding-type", type=str, 
-                        choices=["circular_sinusoidal", "sinusoidal", "linear", "rotary", "text"], 
+                        choices=["circular_sinusoidal", "sinusoidal", "linear", "rotary", "text", "sincos"], 
                         default="linear",
                         help="Type of rotation embedding to use") 
     parser.add_argument("--conditioning-method", type=str, choices=["adaln", "concat"], default="concat",
