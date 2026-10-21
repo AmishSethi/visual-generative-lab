@@ -99,6 +99,17 @@ VARIANTS = {
         "conditioning": "concat",
         "latent": False,
         "flow_matching": True,
+        "flow_sigmoid_time": True,  # these runs drew training times t = sigmoid(u), u ~ U[0, 1]
+        "time_limit": "48:00:00",
+    },
+    # The flow-matching row retrained with t ~ U[0, 1], the default of vgl/flow_matching.py.
+    "flow_tfix": {
+        "architecture": "dit",
+        "model": "DiT-S/2",
+        "embedding": "linear",
+        "conditioning": "concat",
+        "latent": False,
+        "flow_matching": True,
         "time_limit": "48:00:00",
     },
     "unet": {

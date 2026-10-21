@@ -143,6 +143,8 @@ def build_command(skill, variant, seed):
         command.append("--use-latent-diffusion")
     if variant_spec["flow_matching"]:
         command.append("--use-flow-matching")
+        if variant_spec.get("flow_sigmoid_time"):
+            command.append("--flow-use-sigmoid-time")
 
     return command
 
