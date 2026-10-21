@@ -12,6 +12,8 @@ LOG_ROOT = ARTIFACT_ROOT / "logs"
 EVAL_ROOT = ARTIFACT_ROOT / "eval"
 
 CANONICAL_SEEDS = (0, 1, 2)
+# Table 3 reports each cell as the mean over six training seeds.
+TABLE3_SEEDS = (0, 1, 2, 3, 4, 5)
 
 COVERAGES = (25, 50, 75)
 
@@ -49,4 +51,19 @@ SKILL_PAIRS = {
         "properties": ["position", "rotation"],
         "dataset_prefix": "position_rotation",
     },
+}
+
+# Color+Count and Position+Rotation were retrained for Table 3 with the training command of
+# submit_training.py, unchanged (1000 epochs at global batch 64), on the datasets of
+# generate_datasets.py, for TABLE3_SEEDS:
+#   color_count        with the folder-name fix in train_compositional.py; seeds 0-2 and 3-5 train
+#                      on two separately generated copies of each dataset (same arguments).
+#   position_rotation  trains on 45/135/225/315 deg and holds out 0/15/30/330/345 deg, outside the
+#                      training range; one dataset for all six seeds.
+# sample_table3.py samples each run's final checkpoint, or the checkpoint at exactly the step below
+# (1000 epochs), which resumed Color+Count runs train past.
+SAMPLE_STEPS = {
+    ("color_count", 25): 48000,
+    ("color_count", 50): 58000,
+    ("color_count", 75): 87000,
 }
