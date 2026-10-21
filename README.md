@@ -224,7 +224,7 @@ paper_runs/              exact code that produced each paper table
 
 `paper_runs/` is the reproduction layer. Each subdirectory has a `manifest.py` holding the canonical
 paths and per-skill configuration, `submit_*.py` scripts that emit SLURM jobs, and the **paper-locked
-evaluators** (`evaluate_table2.py`, `evaluate_table3.py`, and the `eval_*.py` scripts under `appendix/`),
+evaluators** (`evaluate_table2.py`, `score_table3.py`, and the `eval_*.py` scripts under `appendix/`),
 the code that produced the published numbers.
 
 ```bash
@@ -236,14 +236,21 @@ python -m paper_runs.table2.evaluate_table2 --skill size --variant baseline --se
 python -m paper_runs.table2.evaluate_table2 --skill rotation --variant baseline_nz --seed 0
 python -m paper_runs.table2.aggregate_table2
 
-# Table 3: compositional generalization
+# Table 3: compositional generalization, each cell over seeds 0-5
 python -m paper_runs.table3.generate_datasets
-python -m paper_runs.table3.submit_training
-python -m paper_runs.table3.evaluate_table3 --pair color_shape --coverage 75 --seed 0
-python -m paper_runs.table3.aggregate_table3
+python -m paper_runs.table3.submit_training --seeds 0 1 2 3 4 5
+python -m paper_runs.table3.sample_table3 --pair color_shape --coverage 75 --seed 0
+mkdir -p $VGL_ROOT/MORE_SEEDS/table3/scores
+python -m paper_runs.table3.score_table3 --samples $VGL_ROOT/MORE_SEEDS/table3/samples/color_shape/cov75/seed_0 \
+  --out $VGL_ROOT/MORE_SEEDS/table3/scores/color_shape_cov75_seed0.json
+python -m paper_runs.table3.aggregate_scores
 ```
 
 Everything is written under `$VGL_ROOT`; each `manifest.py` reads that variable.
+
+Table 3 samples the online (non-EMA) weights of each run's final checkpoint, 20 samples per
+combination, and scores every sample on its own. `evaluate_table3.py` and `aggregate_table3.py` are an
+earlier scorer; the paper's Table 3 uses `score_table3.py`.
 
 
 ---
