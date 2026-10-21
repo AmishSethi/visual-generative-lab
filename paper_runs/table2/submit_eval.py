@@ -176,6 +176,8 @@ def main():
     submitted = []
     for skill in args.skills:
         for variant in args.variants:
+            if skill not in VARIANTS[variant].get("skills", SKILLS):
+                continue
             for seed in args.seeds:
                 if has_completed_eval(skill, variant, seed, args.output_root):
                     continue

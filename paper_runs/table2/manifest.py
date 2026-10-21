@@ -122,6 +122,18 @@ VARIANTS = {
         "time_limit": "48:00:00",
         "num_gpus": 4,
     },
+    # The U-Net rotation cell retrained with a periodic [sin, cos] angle input; rotation only.
+    "unet_sincos": {
+        "architecture": "unet",
+        "model": "UNet-DiT-S2-matched",
+        "embedding": "sincos",
+        "conditioning": "concat",
+        "latent": False,
+        "flow_matching": False,
+        "time_limit": "48:00:00",
+        "num_gpus": 4,
+        "skills": ("rotation",),
+    },
     "dit_large": {
         "architecture": "dit",
         "model": "DiT-L/2",

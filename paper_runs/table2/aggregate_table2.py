@@ -44,6 +44,8 @@ def collect_variant_means(eval_root: Path) -> tuple[dict, list[dict]]:
 
     for skill in SKILLS:
         for variant in VARIANTS:
+            if skill not in VARIANTS[variant].get("skills", SKILLS):
+                continue
             source, seeds = variant, CANONICAL_SEEDS
             if variant == "baseline" and skill in BASELINE_OVERRIDES:
                 source, seeds = BASELINE_OVERRIDES[skill]
