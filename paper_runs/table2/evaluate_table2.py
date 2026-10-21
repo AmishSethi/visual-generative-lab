@@ -86,6 +86,11 @@ POSITION_EXTRAP_MARGIN = 6.0
 POSITION_EXTRAP_MIN_MARGIN = 4.0  # Table 2 protocol (L_inf >= 4 px outside training)
 COUNT_EXTRAP_VALUES = (0.0, 1.0, 8.0, 9.0)
 COUNT_MIN_AREA = 30
+# --count-zero choices, as recorded in results.json under protocol.count_zero.
+COUNT_ZERO_MODES = {
+    "numeric": "numeric (null_radius = -1 sentinel at inference)",
+    "null": "null token (null_radius unchanged)",
+}
 
 
 @dataclass(frozen=True)
@@ -674,12 +679,26 @@ def evaluate_size(args, selection: RunSelection, output_dir: Path) -> dict:
     return {"metadata": metadata, "splits": split_results}
 
 
+def query_count_zero_as_number(model: torch.nn.Module) -> None:
+    """Move the null value to -1 so that count 0 is embedded like every other count.
+
+    Counts are clamped to [0, 100] before the null test, so -1 never matches a query and every
+    other count is embedded exactly as before. Models without a null value (the U-Net) are unchanged.
+    """
+    for module in model.modules():
+        if hasattr(module, "null_radius"):
+            module.null_radius = -1.0
+
+
 def evaluate_count(args, selection: RunSelection, output_dir: Path) -> dict:
     metadata = load_dataset_metadata("count")
     queries = maybe_truncate_queries(build_count_queries(metadata), args.max_conditions_per_split)
     config = build_count_config(selection)
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     model = load_radius_model(config, device)
+    # Callers that pass their own args without count_zero (the appendix evaluators) keep the null token.
+    if getattr(args, "count_zero", "null") == "numeric":
+        query_count_zero_as_number(model)
     sampler = create_sampler(config, args.num_sampling_steps)
 
     split_results = {}
@@ -805,6 +824,15 @@ def main():
         default=POSITION_EXTRAP_MIN_MARGIN,
         help="Inner margin (px) for position 'extra' split (min L-inf distance from training rectangle).",
     )
+    parser.add_argument(
+        "--count-zero",
+        choices=sorted(COUNT_ZERO_MODES),
+        default="numeric",
+        help="How count 0 is queried. 'numeric' (Table 2) moves the model's null value to -1 at inference, "
+             "so 0 is embedded like every other count. 'null' keeps the null value, so 0 is queried as the "
+             "null token (Figures 3, 9 and 11). Other counts, and the U-Net, which has no null value, "
+             "are unaffected.",
+    )
     args = parser.parse_args()
 
     output_root = args.output_root or default_output_root(args.num_samples_per_condition, args.num_sampling_steps)
@@ -835,6 +863,7 @@ def main():
         "checkpoint": str(selection.checkpoint),
         "git_commit": selection.run_config.get("git_commit"),
         "run_config": selection.run_config,
+        "protocol": {"count_zero": COUNT_ZERO_MODES[args.count_zero] if args.skill == "count" else None},
         "paper_metrics": EVALUATORS[args.skill](args, selection, output_dir),
     }
 
