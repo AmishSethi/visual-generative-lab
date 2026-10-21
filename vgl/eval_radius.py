@@ -42,7 +42,7 @@ def extract_circle_mask(image, threshold_method='otsu'):
     if threshold_method == 'otsu':
         # Otsu's thresholding
         thresh, mask = cv2.threshold(gray, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
-        # FIX (tiny disks): with a radius 1-2 disk on a noisy background Otsu can split the
+        # Tiny disks: with a radius 1-2 disk on a noisy background Otsu can split the
         # background noise instead of separating the disk; its two classes are then only a few
         # grey levels apart. Re-threshold halfway between the background (border median) and the
         # grey level farthest from it.
@@ -52,7 +52,7 @@ def extract_circle_mask(image, threshold_method='otsu'):
             far = float(gray.min()) if bg - float(gray.min()) >= float(gray.max()) - bg else float(gray.max())
             _, mask = cv2.threshold(gray, (bg + far) / 2.0, 255, cv2.THRESH_BINARY)
         # Invert if needed (ensure circle is white)
-        # FIX (polarity): decide by the frame border, which is background, not by the majority;
+        # Polarity: decide by the frame border, which is background, not by the majority;
         # a centred disk with r > ~25.3 px covers more than half of a 64x64 frame.
         if np.mean(frame_border(mask)) > 127:  # If the border is white, invert
             mask = 255 - mask
@@ -67,7 +67,7 @@ def extract_circle_mask(image, threshold_method='otsu'):
     # Clean up the mask using morphological operations
     kernel = np.ones((3, 3), np.uint8)
     mask = cv2.morphologyEx(mask, cv2.MORPH_CLOSE, kernel)
-    # FIX (radius 1-2): the 3x3 opening erases a radius-1 disk (about 2x2 px) and turns a
+    # Radius 1-2: the 3x3 opening erases a radius-1 disk (about 2x2 px) and turns a
     # radius-2 disk into a 3x3 square or nothing, depending on anti-aliasing; skip it for
     # masks smaller than SMALL_MASK_PX (radius < ~2.5). Larger masks are cleaned as before.
     if mask.sum() >= SMALL_MASK_PX:

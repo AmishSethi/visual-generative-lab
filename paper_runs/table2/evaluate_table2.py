@@ -418,15 +418,15 @@ def detect_count_with_watershed(image: np.ndarray, min_area: int = COUNT_MIN_ARE
 
     blurred = cv2.GaussianBlur(gray, (5, 5), 0)
     thresh, binary = cv2.threshold(blurred, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
-    # FIX (count 0): Otsu always splits the frame in two, so a blank (noise-only) frame used to be
+    # Count 0: Otsu always splits the frame in two, so a blank (noise-only) frame used to be
     # cut into ~10 speckle "objects". Require an absolute contrast between the two classes.
     dark, light = blurred[blurred <= thresh], blurred[blurred > thresh]
     if not (dark.size and light.size) or float(light.mean()) - float(dark.mean()) < COUNT_MIN_CONTRAST:
         return 0
-    # FIX (polarity): the background is the class on the frame border, not the majority class
+    # Polarity: the background is the class on the frame border, not the majority class
     # (8-10 large circles can cover half the frame).
     background_is_light = np.mean(frame_border(binary)) > 127
-    # FIX (light objects): with dark and light circles in one frame, Otsu's threshold falls inside
+    # Light objects: with dark and light circles in one frame, Otsu's threshold falls inside
     # the light circles and keeps only their centres (< min_area). Threshold halfway between
     # Otsu's threshold and the background mean instead.
     background_mean = float(light.mean()) if background_is_light else float(dark.mean())
@@ -442,7 +442,7 @@ def detect_count_with_watershed(image: np.ndarray, min_area: int = COUNT_MIN_ARE
         return 0
 
     dist = cv2.distanceTransform(binary, cv2.DIST_L2, 5)
-    # FIX (touching objects): markers relative to each blob's own depth (was 0.35 of the global
+    # Touching objects: markers relative to each blob's own depth (was 0.35 of the global
     # maximum, which merged near-touching radius-8 circles and could drop small blobs).
     num_blobs, blob = cv2.connectedComponents(binary)
     blob_max = np.zeros(num_blobs)

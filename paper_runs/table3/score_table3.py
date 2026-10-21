@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-"""Per-sample scorer for the two-skill compositional experiments (paper Table 3), version 2.
+"""Per-sample scorer for the two-skill compositional experiments (paper Table 3).
 
 Every generated image is scored on its own against the skill values it was conditioned on.
 A sample with no object fails every skill, and accuracy is the fraction of samples (not of
@@ -36,7 +36,7 @@ Detection and the object
             saddle between them is at most COUNT_PEAK_REL (0.75) of the smaller part's peak, and that peak
             is >= COUNT_MIN_PEAK. A convex object (one peak) is never split; a fused bar with no neck is
             one object (and then fails shape). The ratio was chosen on synthetic rows, bars and single
-            objects (studies.py count_rule) before any Table 3 cell was scored; the single-skill
+            objects before any Table 3 cell was scored; the single-skill
             watershed (detect_count_with_watershed, returned as count_ok_single_skill) blurs and closes
             the mask first, which merges objects 2.5 px apart.
   shape     each object (the object, or every counted component in count pairs) is compared, centroid
@@ -80,11 +80,11 @@ DETECT_MIN_PIXELS = 10     # more than this many pixels above DETECT_MIN_DIST
 MIN_OBJECT_PIXELS = 10     # eval_position.extract_circle_center_debug: valid if mask sum > 10
 MIN_COMPONENT_PIXELS = 10  # the object, pairs without count
 COUNT_MIN_AREA = 30        # paper_runs/table2/evaluate_table2.COUNT_MIN_AREA
-COUNT_PEAK_REL = 0.75      # neck ratio, see _count_necks (studies.py count_rule)
+COUNT_PEAK_REL = 0.75      # neck ratio, see _count_necks
 COUNT_MIN_PEAK = 2.0       # px; a part narrower than ~4 px is smaller than any object the 30-px cut keeps
 TEMPLATE_SCALES = (0.94, 0.97, 1.0, 1.03, 1.06)
 SHAPE_MIN_IOU = 0.75
-ELONG_MAX = 1.25           # GT max 1.115 (studies.py shape_rot)
+ELONG_MAX = 1.25           # GT max 1.115
 ANGLE_TOL = 15.0           # deg from a shape's canonical orientation
 ANGLE_COARSE = 5           # deg, then refined in 1-deg steps around the best coarse angle
 DP_EPSILON = 0.04          # Douglas-Peucker tolerance (fraction of perimeter), vertex diagnostic
@@ -446,7 +446,7 @@ def count_objects(mask: np.ndarray, rel: float | None = None, min_area: int = CO
     """Connected components of the mask with >= min_area px, each split at necks (rule "neck", the
     evaluator's rule, see _count_necks). rule "threshold" counts, within each component, the regions where
     the distance transform exceeds rel x the component's maximum (per_component) or x the image maximum;
-    rule "threshold", rel=0.35, per_component=False is version 1."""
+    rule "threshold", rel=0.35, per_component=False gives the single-skill watershed markers."""
     rel = COUNT_PEAK_REL if rel is None else rel
     m = (mask > 0).astype(np.uint8)
     n, lab, stats, _ = cv2.connectedComponentsWithStats(m, connectivity=8)
@@ -640,7 +640,7 @@ def cond_from_combo(combo, props) -> dict:
 
 
 def run_context(sample_dir: Path, dataset_dir: Path | None = None, rotation_shape: str | None = None):
-    """(pair, props, ctx) for a sample dir written by AUDIT_OCT19/sampling/sample_table3.py, from its
+    """(pair, props, ctx) for a sample dir written by paper_runs/table3/sample_table3.py, from its
     manifest.json (pair, dataset_path) and the dataset metadata. For a rotation pair the manifest's
     rotation_scoring_shape (what the old scorer used) must agree with the dataset metadata."""
     man = json.load(open(sample_dir / "manifest.json"))
@@ -662,7 +662,7 @@ def run_context(sample_dir: Path, dataset_dir: Path | None = None, rotation_shap
 
 def score_npz_dir(sample_dir: Path, dataset_dir: Path | None = None, rotation_shape: str | None = None,
                   keep_records: bool = False) -> dict:
-    """Score <split>.npz / <split>.json written by AUDIT_OCT19/sampling/sample_table3.py."""
+    """Score <split>.npz / <split>.json written by paper_runs/table3/sample_table3.py."""
     pair, props, ctx = run_context(sample_dir, dataset_dir, rotation_shape)
     result = {"pair": pair, "properties": props, "rotation_shape": ctx["rotation_shape"], "splits": {}}
     for split in SPLITS:
