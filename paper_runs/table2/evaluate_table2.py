@@ -39,6 +39,7 @@ from vgl.eval_rotation import (
     load_model as load_rotation_model,
 )
 from vgl.flow_matching import FlowMatching
+from vgl.reproducibility_utils import git_state
 from paper_runs.table2.generate_canonical_datasets import render_circle
 from paper_runs.table2.manifest import CELL_OVERRIDES, DATASET_ROOT, EVAL_ROOT, RESULTS_ROOT, TABLE_ROWS
 
@@ -892,6 +893,7 @@ def main():
         "run_dir": str(selection.run_dir),
         "checkpoint": str(selection.checkpoint),
         "git_commit": selection.run_config.get("git_commit"),
+        "evaluator_git": git_state(),
         "run_config": selection.run_config,
         "protocol": {"count_zero": COUNT_ZERO_MODES[args.count_zero] if args.skill == "count" else None},
         "paper_metrics": EVALUATORS[args.skill](args, selection, output_dir),
