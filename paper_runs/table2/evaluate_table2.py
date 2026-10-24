@@ -264,6 +264,25 @@ def build_position_queries(
     return {"train": train_positions, "interp": interp, "extra": extrap}
 
 
+def select_conditions(queries: dict[str, list], conditions_file: Path | None) -> dict[str, list]:
+    """Keep only the conditions that conditions_file lists for a split (its '<split>_keys' entries,
+    written 'split|query'); splits it does not list stay whole."""
+    if conditions_file is None:
+        return queries
+    spec = load_json(conditions_file)
+    selected = {}
+    for split_name, values in queries.items():
+        keys = spec.get(f"{split_name}_keys")
+        if keys is None:
+            selected[split_name] = values
+            continue
+        wanted = {key.split("|", 1)[1] for key in keys}
+        selected[split_name] = [value for value in values if serialize_query(value) in wanted]
+        if len(selected[split_name]) != len(wanted):
+            raise ValueError(f"{conditions_file}: some {split_name} conditions are not in the query grid")
+    return selected
+
+
 def maybe_truncate_queries(queries: dict[str, list], max_conditions_per_split: int | None) -> dict[str, list]:
     if max_conditions_per_split is None:
         return queries
@@ -742,10 +761,13 @@ def evaluate_rotation(args, selection: RunSelection, output_dir: Path) -> dict:
 def evaluate_position(args, selection: RunSelection, output_dir: Path) -> dict:
     metadata = load_dataset_metadata("position")
     queries = maybe_truncate_queries(
-        build_position_queries(
-            metadata,
-            extrap_margin=args.position_extrap_margin,
-            extrap_min_margin=args.position_extrap_min_margin,
+        select_conditions(
+            build_position_queries(
+                metadata,
+                extrap_margin=args.position_extrap_margin,
+                extrap_min_margin=args.position_extrap_min_margin,
+            ),
+            getattr(args, "conditions_file", None),
         ),
         args.max_conditions_per_split,
     )
@@ -793,6 +815,14 @@ def main():
     parser.add_argument("--num-sampling-steps", type=int, default=250)
     parser.add_argument("--eval-batch-size", type=int, default=8)
     parser.add_argument("--max-conditions-per-split", type=int, default=None)
+    parser.add_argument(
+        "--conditions-file",
+        type=Path,
+        default=None,
+        help="Position only: score just the conditions this JSON file lists for a split ('<split>_keys'); "
+             "other splits stay whole. paper_runs/table2/position_subsample_100.json is the fixed random "
+             "100-condition train and interp subset of Table 2's DiT-L and U-Net position rows.",
+    )
     parser.add_argument("--output-root", type=Path, default=None)
     parser.add_argument("--checkpoint", type=Path, default=None,
                         help="Evaluate this checkpoint (its run_config.json must sit beside it, as in the Hub layout) instead of the latest finished run under RESULTS_ROOT.")
@@ -857,6 +887,7 @@ def main():
         "size_extrap_max": args.size_extrap_max,
         "position_extrap_margin": args.position_extrap_margin,
         "position_extrap_min_margin": args.position_extrap_min_margin,
+        "conditions_file": str(args.conditions_file) if args.conditions_file else None,
         "evaluated_at_utc": datetime.now(timezone.utc).isoformat(),
         "run_dir": str(selection.run_dir),
         "checkpoint": str(selection.checkpoint),

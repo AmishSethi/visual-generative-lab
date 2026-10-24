@@ -234,6 +234,9 @@ python -m paper_runs.table2.submit_training --skills size position rotation coun
 python -m paper_runs.table2.submit_baseline_nz_extra_seeds --seeds 0 1 2 3 4 5 6 7 8 9
 python -m paper_runs.table2.evaluate_table2 --skill size --variant baseline --seed 0
 python -m paper_runs.table2.evaluate_table2 --skill rotation --variant baseline_nz --seed 0
+# DiT-L and U-Net position: train and interp on a fixed random 100-condition subset, extra in full
+python -m paper_runs.table2.evaluate_table2 --skill position --variant dit_large --seed 0 \
+  --conditions-file paper_runs/table2/position_subsample_100.json
 python -m paper_runs.table2.aggregate_table2
 
 # Table 3: compositional generalization, each cell over seeds 0-5
