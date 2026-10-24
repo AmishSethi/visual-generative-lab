@@ -54,9 +54,9 @@ class EvalArgs:
         self.eval_batch_size = batch
         self.max_conditions_per_split = max_cond
         self.size_extrap_min = 1          # SIZE_EXTRAP_MIN
-        self.size_extrap_max = 25         # SIZE_EXTRAP_MAX
+        self.size_extrap_max = 30         # SIZE_EXTRAP_MAX
         self.position_extrap_margin = 6.0        # POSITION_EXTRAP_MARGIN
-        self.position_extrap_min_margin = 0.0    # POSITION_EXTRAP_MIN_MARGIN
+        self.position_extrap_min_margin = 4.0    # POSITION_EXTRAP_MIN_MARGIN
 
 
 def main():
