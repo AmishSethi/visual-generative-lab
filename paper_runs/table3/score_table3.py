@@ -36,9 +36,8 @@ Detection and the object
             saddle between them is at most COUNT_PEAK_REL (0.75) of the smaller part's peak, and that peak
             is >= COUNT_MIN_PEAK. A convex object (one peak) is never split; a fused bar with no neck is
             one object (and then fails shape). The ratio was chosen on synthetic rows, bars and single
-            objects before any Table 3 cell was scored; the single-skill
-            watershed (detect_count_with_watershed, returned as count_ok_single_skill) blurs and closes
-            the mask first, which merges objects 2.5 px apart.
+            objects; the single-skill watershed (detect_count_with_watershed, returned as
+            count_ok_single_skill) blurs and closes the mask first, which merges objects 2.5 px apart.
   shape     each object (the object, or every counted component in count pairs) is compared, centroid
             aligned and at the size implied by its area (x0.94..1.06), with the circle and with the
             square and triangle rendered at every orientation (5-deg search refined to 1 deg). An object
@@ -46,8 +45,8 @@ Detection and the object
             isotropic), as is one whose best IoU is below 0.75. Otherwise the best fit decides: circle;
             a square-like polygon within ANGLE_TOL of axis-aligned is a square and within ANGLE_TOL of
             45 deg a diamond; a triangle within ANGLE_TOL of upright is a triangle; any other
-            orientation is none. Success if every object is the requested shape. "vertex" (A.4's
-            description: Douglas-Peucker vertex count) is kept as a diagnostic.
+            orientation is none. Success if every object is the requested shape. "vertex" (a
+            Douglas-Peucker vertex count) is kept as a diagnostic.
   color     mean RGB inside the object (in count pairs, the whole mask), nearest of the 8 palette
             colours by L2 distance.
 """
@@ -362,7 +361,9 @@ def rotation_bank(shape):
 
 # ------------------------------------------------------------------------------------- count
 def detect_count_with_watershed(image: np.ndarray, min_area: int = COUNT_MIN_AREA) -> int:
-    """Verbatim copy of paper_runs/table2/evaluate_table2.detect_count_with_watershed (single-skill count)."""
+    """Earlier single-skill counter (majority-class polarity, markers at 0.35 of the global maximum, no
+    blank-frame rule), kept for the diagnostic count_ok_single_skill. The Table 2 counter is
+    paper_runs/table2/evaluate_table2.detect_count_with_watershed."""
     if image.ndim == 3:
         gray = cv2.cvtColor(image, cv2.COLOR_RGB2GRAY)
     else:
