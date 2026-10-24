@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-"""Score pretrained-T2I outputs with VGL's rule-based skill metrics.
+"""Score pretrained-T2I outputs with rule-based skill extractors adapted from VGL's metrics.
 
 Extraction is built for real T2I renders, which have soft edges, off-white
 backgrounds and occasional drop shadows: the foreground test keys on the
