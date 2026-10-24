@@ -229,8 +229,7 @@ paper_runs/              code behind the paper's tables (the paper's checklist l
 
 `paper_runs/` is the reproduction layer. Each subdirectory has a `manifest.py` holding the canonical
 paths and per-skill configuration, `submit_*.py` scripts that emit SLURM jobs, and the **paper-locked
-evaluators** (`evaluate_table2.py`, `score_table3.py`, and the `eval_*.py` scripts under `appendix/`),
-the code that produced the published numbers.
+evaluators** (`evaluate_table2.py`, `score_table3.py`, and the `eval_*.py` scripts under `appendix/`).
 
 ```bash
 # Table 2: single-skill generalization, all skills x all variants x 3 seeds
