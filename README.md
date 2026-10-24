@@ -280,9 +280,10 @@ Compositional pairs that include rotation without shape render an arrow; set `VG
 
 ## Pretrained checkpoints
 
-The checkpoints behind Table 2 (all skills and variants; 128 files, 98 GB) are on the
-Hugging Face Hub at [ASethi04/vgl-checkpoints](https://huggingface.co/ASethi04/vgl-checkpoints), laid out as
-`table2/<skill>/<variant>/seed_<n>/final.pt` with each run's `run_config.json` beside it:
+The Table 2 checkpoints are on the Hugging Face Hub at
+[ASethi04/vgl-checkpoints](https://huggingface.co/ASethi04/vgl-checkpoints) (128 files, 98 GB), except
+those of the flow-matching row, the U-Net rotation cell and DiT-L size seed 2. Each run is at
+`table2/<skill>/<variant>/seed_<n>/final.pt` with its `run_config.json` beside it:
 
 ```bash
 huggingface-cli download ASethi04/vgl-checkpoints --include "table2/rotation/baseline_nz/*" --local-dir checkpoints

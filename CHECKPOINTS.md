@@ -23,10 +23,15 @@ checkpoints/
   table2/{skill}/{variant}/seed_{n}/run_config.json
 ```
 
-`skill` ∈ {size, position, rotation, count}; `variant` is a row of the results table
-(`baseline`, `sinusoidal`, `rotary`, `adaln`, `vae`, `flow`, `unet`, `dit_large`). Rotation also has
+`skill` ∈ {size, position, rotation, count}; `variant` is `baseline`, `sinusoidal`, `rotary`, `adaln`,
+`vae`, `flow`, `unet` or `dit_large`. `flow` holds the earlier flow-matching runs, which drew training
+times as t = sigmoid(u) (`--flow-use-sigmoid-time`); the Table 2 row is `flow_tfix`. Rotation also has
 `baseline_nz` (seeds 0-9), `baseline_nz_warmstart` (seeds 100-104) and
-`{sinusoidal,rotary,adaln,vae,flow,unet}_nz`.
+`{sinusoidal,rotary,adaln,vae,flow,unet}_nz`, where `_nz` marks a zero null embedding
+(`--null-embedding-type zero`); `rotation/baseline` uses a learnable one.
+
+Not on the Hub: the flow-matching row (`flow_tfix`), the U-Net rotation cell (`unet_sincos`) and
+DiT-L size seed 2.
 
 Each file contains `model`, `ema`, `opt`, `train_steps` and `epoch`. Evaluation uses the **EMA** weights.
 
@@ -39,11 +44,15 @@ Each file contains `model`, `ema`, `opt`, `train_steps` and `epoch`. Evaluation 
 | + rotary emb. | `rotary` | |
 | + AdaLN | `adaln` | AdaLN-Zero instead of concatenation |
 | + VAE latent | `vae` | `--use-latent-diffusion` |
-| + flow matching | `flow` | `--use-flow-matching` |
-| + U-Net (capacity-matched) | `unet` | parameter-matched to DiT-S/2 |
-| + DiT-L (capacity scaling) | `dit_large` | ~306M params |
+| + flow matching | `flow_tfix` | `--use-flow-matching`, t ~ U[0, 1] |
+| + U-Net (matched #params) | `unet` | parameter-matched to DiT-S/2; for rotation the table uses `unet_sincos` ([sin, cos] angle input); `rotation/unet` takes the angle as a scalar |
+| + DiT-L (higher #params) | `dit_large` | ~306M params |
 
-Count checkpoints are trained for 3000 epochs; every other skill uses 1000.
+Count checkpoints are trained for 3000 epochs; every other skill uses 1000, except
+`rotation/rotary/seed_0` and `rotation/baseline/seed_1`, which stopped at 74,168 and 73,906 of 78,000
+steps (about 950 epochs). Runs that resumed after an interruption skip the rest of the interrupted
+epoch (and the next one, in `scripts/train.py` and `scripts/train_position.py`), so some end up to a
+few hundred steps short.
 
 ## Evaluating a checkpoint
 
