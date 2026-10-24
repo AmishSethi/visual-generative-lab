@@ -27,6 +27,10 @@ CELL_OVERRIDES = {
     ("rotation", "baseline"): ("baseline_nz", tuple(range(10))),
     ("rotation", "unet"): ("unet_sincos", CANONICAL_SEEDS),
 }
+# Table 2 scores the DiT-L and U-Net position rows' train and interp splits on a fixed random
+# 100-condition subset (evaluate_table2.py --conditions-file); extrapolation is complete.
+POSITION_SUBSET_FILE = REPO_ROOT / "paper_runs" / "table2" / "position_subsample_100.json"
+POSITION_SUBSET_VARIANTS = ("dit_large", "unet")
 DATASET_SEED = 42
 EVAL_NUM_SAMPLES = 20
 EVAL_NUM_SAMPLING_STEPS = 250
