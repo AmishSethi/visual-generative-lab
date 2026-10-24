@@ -133,7 +133,7 @@ conda activate vgl
 pip install -e .
 ```
 
-Or with pip (assumes a working PyTorch ≥ 2.0 + CUDA install):
+Or with pip (install PyTorch 2.5.1 and torchvision 0.20.1 for your CUDA version first):
 
 ```bash
 pip install -r requirements.txt
