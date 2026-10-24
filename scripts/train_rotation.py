@@ -383,6 +383,8 @@ def main(args):
             opt.load_state_dict(checkpoint["opt"])
             train_steps = checkpoint.get("train_steps", 0)
             start_epoch = checkpoint.get("epoch", 0) + 1  # Start from next epoch
+            # A resumed run skips the rest of the interrupted epoch. The paper's runs resumed this
+            # way, so the behaviour is kept.
             
             logger.info(f"Resumed from epoch {start_epoch}, step {train_steps}")
         else:

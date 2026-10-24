@@ -441,6 +441,8 @@ def main(args):
                     start_epoch = train_steps // steps_per_epoch
                     logger.info(f"Extracted from filename: step {train_steps}, calculated epoch {start_epoch}")
             
+            # With the +1 above, a resumed run skips the rest of the interrupted epoch and the next
+            # one. The paper's runs resumed this way, so the behaviour is kept.
             start_epoch = start_epoch + 1  # Start from next epoch
             
             logger.info(f"Resumed from epoch {start_epoch}, step {train_steps}")
