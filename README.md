@@ -272,8 +272,6 @@ python paper_runs/table2/generate_canonical_datasets.py --skills size position r
 
 Datasets are `ImageFolder`-structured with the skill value encoded in the directory name.
 
-Compositional pairs that include rotation without shape render an arrow; set `VGL_ROTATION_SHAPE=arrow` when evaluating them.
-
 | skill | type | training domain | extrapolation values |
 |---|---|---|---|
 | size | continuous | radius ∈ [5, 20] px | {1,2,3,4} ∪ {21,…,30} px |
@@ -317,10 +315,16 @@ Every metric is rule-based, with no learned components, so scores are reproducib
 |---|---|---|
 | size | Otsu threshold → mask area → r = √(area/π) | IoU ≥ 0.90 vs ground truth |
 | position | centroid of the object mask | within 2 px |
-| rotation | multi-scale template matching on the arrow | within 5° |
-| count | distance transform + watershed, blobs > 30 px | exact match |
-| shape | contour-based classification | class match |
+| rotation | template matching on the arrow, coarse to fine over angle | within 5° |
+| count | Otsu mask (blank frames, with classes < 20 grey levels apart, count 0), distance transform + watershed, blobs > 30 px | exact match |
+| shape | template matching against shape renders (best fit over orientation) | class match |
 | color | nearest-neighbour in RGB | class match |
+
+The size, position, rotation and count rows are the single-skill (Table 2) metrics. Table 3 scores
+every sample with `paper_runs/table3/score_table3.py`, whose docstring gives its rules (count, for
+example, splits touching objects at necks). Appendix A.4 lists the results scored with the earlier
+size and count extractors; that code is `vgl/eval_radius.py` and `paper_runs/table2/evaluate_table2.py`
+at commit 47b7b4a.
 
 
 ---
