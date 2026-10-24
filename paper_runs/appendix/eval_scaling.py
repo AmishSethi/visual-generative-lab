@@ -42,15 +42,15 @@ class EvalArgs:
 
 def main():
     parser = argparse.ArgumentParser(description="Evaluate the data-scaling sweep.")
-    parser.add_argument("--skills", nargs="+", default=["size", "position", "count"])
+    parser.add_argument("--skills", nargs="+", default=["size", "position", "rotation", "count"])
     parser.add_argument("--sizes", nargs="+", default=[f"{n // 1000}k" for n in SCALING_SIZES])
     parser.add_argument("--seed", type=int, default=0)
     parser.add_argument("--num-samples", type=int, default=20)
     parser.add_argument("--steps", type=int, default=250)
     parser.add_argument("--eval-batch-size", type=int, default=20)
-    parser.add_argument("--max-conditions-per-split", type=int, default=None,
-                        help="Position has 1024 conditions per split; cap it for a "
-                             "sub-sampled but paper-comparable number.")
+    parser.add_argument("--max-conditions-per-split", type=int, default=50,
+                        help="Conditions per split, spread evenly (Table 7 scores 50 for position "
+                             "and rotation; size and count have fewer, so they are scored in full).")
     parser.add_argument("--out", type=Path, default=EVAL_ROOT / "scaling_results.json")
     args = parser.parse_args()
 
