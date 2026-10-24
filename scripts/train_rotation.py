@@ -1,4 +1,10 @@
 #!/usr/bin/env python
+# Copyright (c) Meta Platforms, Inc. and affiliates.
+# All rights reserved.
+
+# This source code is licensed under the license found in the
+# LICENSE file in the root directory of this source tree.
+
 """
 A minimal training script for DiT using PyTorch DDP.
 Continuous rotation angle conditioning with checkpoint resuming and signal handling.

@@ -30,4 +30,4 @@ THIRD-PARTY COMPONENTS
 
 vgl/diffusion/ is adapted from OpenAI's guided-diffusion / ADM
 (https://github.com/openai/guided-diffusion), released under the MIT License.
-Those files retain their original MIT terms and headers.
+Those files remain under the MIT License; its text is in vgl/diffusion/LICENSE.
