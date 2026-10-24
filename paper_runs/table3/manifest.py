@@ -62,6 +62,14 @@ SKILL_PAIRS = {
 #                      training range; one dataset for all six seeds.
 # sample_table3.py samples each run's final checkpoint, or the checkpoint at exactly the step below
 # (1000 epochs), which resumed Color+Count runs train past.
+#
+# This pipeline renders each dataset once and trains all six seeds on it. In the paper's Table 3,
+# 14 settings pool two renderings of the same combinations, seeds 0-2 on the first and 3-5 on
+# the second: color_shape, color_count and the 75% coverage of every other pair except
+# position_rotation, plus the 50% coverage of color_position, position_shape and shape_count. The
+# other 10 settings (position_rotation, and the 25% coverage of color_position, position_shape,
+# shape_count, and the 25% and 50% coverage of position_size and size_shape) use one rendering
+# for all six seeds.
 SAMPLE_STEPS = {
     ("color_count", 25): 48000,
     ("color_count", 50): 58000,
