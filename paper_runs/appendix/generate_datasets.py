@@ -1,9 +1,9 @@
 #!/usr/bin/env python
 """Generate appendix datasets.
 
-Three families:
+Four families:
 
-  scaling   80k-image pools for size/position/count at 64x64, plus nested
+  scaling   80k-image pools for all four skills at 64x64, plus nested
             10k/20k/40k subsets built as symlink trees.  Nesting means the
             data-scaling curve varies exactly one thing: the number of unique
             training images.
@@ -17,7 +17,11 @@ Three families:
             for testing whether the extrapolation boundary follows the
             support.
 
-All three reuse the paper-locked renderers in
+  count_random  the 10k-image count set of radius-8 circles at random positions
+            (not the radius-4 lattice of Table 2) on which the text-conditioned
+            count model and its numeric comparator train.
+
+All four reuse the paper-locked renderers in
 paper_runs/table2/generate_canonical_datasets.py so pixel statistics (colour
 palettes, antialiasing, noise) match the paper exactly.
 """
@@ -39,7 +43,8 @@ from paper_runs.appendix.manifest import (
     SCALING_SKILLS,
 )
 
-# 64x64 specs, identical to the paper's except for total_images.
+# 64x64 specs. size and position equal the Table 2 specs apart from total_images;
+# rotation and count differ as noted below.
 BASE_SPECS = {
     "size": {
         "image_size": 64,
@@ -67,6 +72,7 @@ BASE_SPECS = {
         "shape_type": "arrow",
         "seed": DATASET_SEED,
     },
+    # Radius-8 circles at random positions, not the radius-4 lattice of the Table 2 count set.
     "count": {
         "image_size": 64,
         "counts": list(range(2, 8)),
@@ -165,9 +171,18 @@ def build_ranges(names, force: bool) -> None:
         GENERATORS[skill](output_dir, spec)
 
 
+def build_count_random(force: bool) -> None:
+    output_dir = DATASET_ROOT / "count_random"
+    if not force and (output_dir / "dataset_metadata.json").exists():
+        print(f"[count_random] reusing existing {output_dir}", flush=True)
+        return
+    print(f"[count_random] generating 10000 count images -> {output_dir}", flush=True)
+    generate_pool("count", output_dir, 10000)
+
+
 def main():
     parser = argparse.ArgumentParser(description="Generate appendix datasets.")
-    parser.add_argument("--family", required=True, choices=["scaling", "hires", "ranges"])
+    parser.add_argument("--family", required=True, choices=["scaling", "hires", "ranges", "count_random"])
     parser.add_argument("--skills", nargs="+", default=None)
     parser.add_argument("--force", action="store_true")
     args = parser.parse_args()
@@ -176,6 +191,8 @@ def main():
         build_scaling(args.skills or list(SCALING_SKILLS), args.force)
     elif args.family == "ranges":
         build_ranges(args.skills or list(RANGE_SPECS.keys()), args.force)
+    elif args.family == "count_random":
+        build_count_random(args.force)
     else:
         build_hires(args.skills or list(HIRES_SPECS.keys()), args.force)
 
