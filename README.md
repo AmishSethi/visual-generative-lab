@@ -173,7 +173,7 @@ python -m paper_runs.table2.generate_canonical_datasets --skills size --output-r
 torchrun --standalone --nproc_per_node=1 scripts/train.py \
   --data-path $T2/datasets/size --results-dir $T2/results/size/baseline/seed_0 \
   --model DiT-S/2 --image-size 64 --epochs 1000 --global-batch-size 128 --global-seed 0 \
-  --radius-embedding-type linear --conditioning-method concat
+  --num-workers 4 --radius-embedding-type linear --conditioning-method concat
 
 # 3. evaluate on train / interp / extra with the paper's protocol
 python -m paper_runs.table2.evaluate_table2 --skill size --variant baseline --seed 0
@@ -231,9 +231,11 @@ the code that produced the published numbers.
 
 ```bash
 # Table 2: single-skill generalization, all skills x all variants x 3 seeds
-python -m paper_runs.table2.submit_training --skills size position rotation count --seeds 0 1 2
+python -m paper_runs.table2.generate_canonical_datasets --skills size position rotation count
+# without --submit, the submit_* scripts only write the Slurm scripts
+python -m paper_runs.table2.submit_training --skills size position rotation count --seeds 0 1 2 --submit
 # the rotation baseline cell is baseline_nz over seeds 0-9
-python -m paper_runs.table2.submit_baseline_nz_extra_seeds --seeds 0 1 2 3 4 5 6 7 8 9
+python -m paper_runs.table2.submit_baseline_nz_extra_seeds --seeds 0 1 2 3 4 5 6 7 8 9 --submit
 python -m paper_runs.table2.evaluate_table2 --skill size --variant baseline --seed 0
 python -m paper_runs.table2.evaluate_table2 --skill rotation --variant baseline_nz --seed 0
 # DiT-L and U-Net position: train and interp on a fixed random 100-condition subset, extra in full
@@ -243,7 +245,7 @@ python -m paper_runs.table2.aggregate_table2
 
 # Table 3: compositional generalization, each cell over seeds 0-5
 python -m paper_runs.table3.generate_datasets
-python -m paper_runs.table3.submit_training --seeds 0 1 2 3 4 5
+python -m paper_runs.table3.submit_training --seeds 0 1 2 3 4 5 --submit
 python -m paper_runs.table3.sample_table3 --pair color_shape --coverage 75 --seed 0
 mkdir -p $VGL_ROOT/MORE_SEEDS/table3/scores
 python -m paper_runs.table3.score_table3 --samples $VGL_ROOT/MORE_SEEDS/table3/samples/color_shape/cov75/seed_0 \
@@ -294,7 +296,9 @@ those of the flow-matching row, the U-Net rotation cell and DiT-L size seed 2. E
 huggingface-cli download ASethi04/vgl-checkpoints --include "table2/rotation/baseline_nz/*" --local-dir checkpoints
 ```
 
-To evaluate a downloaded checkpoint with the paper's protocol, point the evaluator at it:
+To evaluate a downloaded checkpoint with the paper's protocol, generate that skill's dataset first
+(see [Datasets](#datasets); the evaluator reads the query grid from its metadata), then point the
+evaluator at it:
 
 ```bash
 python -m paper_runs.table2.evaluate_table2 --skill rotation --variant baseline_nz --seed 0 \

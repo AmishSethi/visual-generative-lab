@@ -56,6 +56,9 @@ few hundred steps short.
 
 ## Evaluating a checkpoint
 
+Generate that skill's dataset first (see Datasets in the main README); the evaluator reads the
+query grid from its metadata.
+
 ```bash
 python -m paper_runs.table2.evaluate_table2 --skill size --variant baseline --seed 0 \
   --checkpoint checkpoints/table2/size/baseline/seed_0/final.pt
