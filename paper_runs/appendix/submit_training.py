@@ -201,8 +201,8 @@ def jobs_budget5k(seed):
     """The shape x colour grid (S=4/8, C=8/16, coverage 25/50/75) at a
     5,000-image budget.
 
-    At a 15,000-image budget eleven of the twelve cells score exactly 100%, so
-    coverage cannot be separated from K -- the task is too easy.  Five thousand
+    At a 15,000-image budget eight of the twelve cells score 100% (Table 13), so
+    coverage is hard to separate from K.  Five thousand
     images keeps the grid below saturation, on the part of the curve where the
     paper's compositional results differ, and each run takes ~6h rather than
     ~19h.
