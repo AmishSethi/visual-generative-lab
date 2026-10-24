@@ -212,7 +212,7 @@ vgl/                       importable library
 
 scripts/                   training entry points (one per skill)
 
-paper_runs/              exact code that produced each paper table
+paper_runs/              code behind the paper's tables (the paper's checklist lists what is not included)
   table2/                single-skill generalization (Table 2)
   table3/                compositional generalization (Table 3)
   appendix/              experiments behind the appendix: data scaling, resolution, token-matched
@@ -264,11 +264,14 @@ earlier scorer; the paper's Table 3 uses `score_table3.py`.
 
 ## Datasets
 
-All datasets are synthetic, generated deterministically from a fixed seed, so they can be rebuilt:
+All datasets are synthetic. The Table 2 datasets are rebuilt deterministically with:
 
 ```bash
 python paper_runs/table2/generate_canonical_datasets.py --skills size position rotation count
 ```
+
+For the Table 3 datasets the seed fixes the training combinations but not the colour jitter or pixel
+noise.
 
 Datasets are `ImageFolder`-structured with the skill value encoded in the directory name.
 
