@@ -66,12 +66,8 @@ def calculate_rotation_metrics_robust(
                 "detection_success": False, "expected_angle": expected_angle,
                 "detected_angle": 0.0}
 
-    # Wrap error to [-180, 180]
-    diff = float(detected) - expected_angle
-    if diff > 180:
-        diff -= 360
-    elif diff < -180:
-        diff += 360
+    # Wrap error to [-180, 180)
+    diff = (float(detected) - expected_angle + 180.0) % 360.0 - 180.0
 
     return {
         "angle_error": diff,
