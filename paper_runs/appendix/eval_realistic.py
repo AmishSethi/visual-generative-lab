@@ -5,7 +5,7 @@ The paper's extractors assume a flat subject on a near-white ground and key off
 Otsu thresholding, which does not survive textured backgrounds and shaded
 objects.  Geometry here is recovered from the saturation mask instead -- objects
 are rendered saturated, backgrounds desaturated -- and every metric keeps the
-paper's own threshold so the numbers stay comparable to Table 1:
+paper's own threshold so the numbers stay comparable to Table 2:
 
     size      IoU >= 0.90 against the ground-truth disc
     position  centroid within 2 px

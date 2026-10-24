@@ -192,6 +192,8 @@ Each skill has its own training entry point, because the conditioning differs:
 | count | `scripts/train_count.py` | discrete integer |
 | multi-skill | `scripts/train_compositional.py` | `--include-properties` |
 
+In file names and flags the size skill is called radius (e.g. `--radius-embedding-type`).
+
 ---
 
 ## Repository layout
@@ -208,9 +210,10 @@ vgl/                       importable library
   eval_radius.py           size sampler + rule-based metric
   eval_position.py         position sampler + metric
   eval_rotation.py         rotation sampler + metric
+  eval_compositional.py    multi-skill test sets (and the earlier Table 3 scorer's metrics)
   reproducibility_utils.py seeding, worker init, run-config logging
 
-scripts/                   training entry points (one per skill)
+scripts/                   training entry points (one per skill) and the two-skill dataset generators
 
 paper_runs/              code behind the paper's tables (the paper's checklist lists what is not included)
   table2/                single-skill generalization (Table 2)
@@ -234,7 +237,7 @@ the code that produced the published numbers.
 python -m paper_runs.table2.generate_canonical_datasets --skills size position rotation count
 # without --submit, the submit_* scripts only write the Slurm scripts
 python -m paper_runs.table2.submit_training --skills size position rotation count --seeds 0 1 2 --submit
-# the rotation baseline cell is baseline_nz over seeds 0-9
+# the rotation baseline cell is baseline_nz (null-embedding type zero) over seeds 0-9
 python -m paper_runs.table2.submit_baseline_nz_extra_seeds --seeds 0 1 2 3 4 5 6 7 8 9 --submit
 python -m paper_runs.table2.evaluate_table2 --skill size --variant baseline --seed 0
 python -m paper_runs.table2.evaluate_table2 --skill rotation --variant baseline_nz --seed 0
@@ -258,7 +261,9 @@ python scripts/generate_color_shape_dataset.py --output-dir $VGL_ROOT/datasets/c
   --coverage 25 --train-samples 15000
 ```
 
-Everything is written under `$VGL_ROOT`; each `manifest.py` reads that variable.
+Everything is written under `$VGL_ROOT` (Table 2 under `MORE_SEEDS/table2`; Table 3's runs under
+`MORE_SEEDS/table3` and its datasets under `datasets/compositional_experiments_2prop`; the appendix
+under `appendix`); each `manifest.py` reads that variable.
 
 Table 3 samples the online (non-EMA) weights of each run's final checkpoint, 20 samples per
 combination, and scores every sample on its own. `evaluate_table3.py` and `aggregate_table3.py` are an
