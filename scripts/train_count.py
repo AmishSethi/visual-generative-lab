@@ -499,11 +499,14 @@ def main(args):
 
     resume_batch_offset = 0
     if train_steps > 0:
-        steps_per_epoch = len(loader)
-        start_epoch, resume_batch_offset = divmod(train_steps, steps_per_epoch)
+        # train_steps counts optimizer steps; each takes grad_accum_steps loader batches, and an
+        # epoch's leftover batches (fewer than grad_accum_steps) are dropped.
+        steps_per_epoch = len(loader) // grad_accum_steps
+        start_epoch, resume_step_offset = divmod(train_steps, steps_per_epoch)
+        resume_batch_offset = resume_step_offset * grad_accum_steps
         logger.info(
             f"Exact resume position: epoch {start_epoch}, "
-            f"batch offset {resume_batch_offset}/{steps_per_epoch}, step {train_steps}"
+            f"batch offset {resume_batch_offset}/{len(loader)}, step {train_steps}"
         )
 
     # Prepare models for training:
