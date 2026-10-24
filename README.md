@@ -251,6 +251,11 @@ mkdir -p $VGL_ROOT/MORE_SEEDS/table3/scores
 python -m paper_runs.table3.score_table3 --samples $VGL_ROOT/MORE_SEEDS/table3/samples/color_shape/cov75/seed_0 \
   --out $VGL_ROOT/MORE_SEEDS/table3/scores/color_shape_cov75_seed0.json
 python -m paper_runs.table3.aggregate_scores
+
+# Figure 4(b) and Figure 5: fixed-budget color + shape datasets
+# (--coverage 25, 50 or 75; --train-samples 5000, 10000 or 15000)
+python scripts/generate_color_shape_dataset.py --output-dir $VGL_ROOT/datasets/color_shape_composition_cov25_samples15k \
+  --coverage 25 --train-samples 15000
 ```
 
 Everything is written under `$VGL_ROOT`; each `manifest.py` reads that variable.
