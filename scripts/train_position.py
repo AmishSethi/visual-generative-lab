@@ -604,6 +604,8 @@ def main(args):
                 if accum_steps < grad_accum_steps:
                     continue
                 
+                # The clip comes after the update, so it has no effect. The paper's runs trained this
+                # way, so the order is kept.
                 opt.step()
                 torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=1.0)
                 opt.zero_grad()

@@ -621,6 +621,8 @@ def main(args):
                     opt.zero_grad()
                     continue
                 
+                # The clip comes after the update, so it has no effect. The paper's runs trained this
+                # way, so the order is kept.
                 opt.step()
                 torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=1.0)
                 

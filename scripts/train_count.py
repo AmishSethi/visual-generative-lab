@@ -606,8 +606,14 @@ def main(args):
                 if accum_steps < grad_accum_steps:
                     continue
                 
-                opt.step()
-                torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=1.0)
+                if args.clip_grad_before_step:
+                    torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=1.0)
+                    opt.step()
+                else:
+                    # As the appendix count runs trained: the clip comes after the update, so it has
+                    # no effect.
+                    opt.step()
+                    torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=1.0)
                 opt.zero_grad()
                 accum_steps = 0
                 
@@ -681,6 +687,10 @@ if __name__ == "__main__":
     parser.add_argument("--global-batch-size", type=int, default=128)
     parser.add_argument("--micro-batch-size", type=int, default=None,
                         help="Optional per-device micro batch size used with gradient accumulation")
+    parser.add_argument("--clip-grad-before-step", action="store_true",
+                        help="Clip the global gradient norm to 1.0 before each optimizer step, as the Table 2 "
+                             "count runs did. Without it the clip runs after the step and has no effect, as in "
+                             "the appendix count runs.")
     parser.add_argument("--global-seed", type=int, default=0)
     parser.add_argument("--vae", type=str, choices=["ema", "mse"], default="ema")  # Choice doesn't affect training
     parser.add_argument("--num-workers", type=int, default=1)

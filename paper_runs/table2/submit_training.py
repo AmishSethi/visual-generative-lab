@@ -134,6 +134,7 @@ def build_command(skill, variant, seed):
         f"--{skill_spec['dropout_flag']}",
         "0.0",
         *skill_spec["null_args"],
+        *skill_spec.get("extra_args", []),
     ]
 
     micro_batch_size = MICRO_BATCH_OVERRIDES.get((skill, variant))
