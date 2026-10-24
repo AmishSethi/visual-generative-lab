@@ -14,7 +14,7 @@ if __package__ in (None, ""):
     sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
 from paper_runs.table2.manifest import (
-    BASELINE_OVERRIDES, CANONICAL_SEEDS, EVAL_ROOT, SKILLS, TABLE_ROWS, VARIANTS,
+    CANONICAL_SEEDS, CELL_OVERRIDES, EVAL_ROOT, SKILLS, TABLE_ROWS, VARIANTS,
 )
 
 
@@ -51,9 +51,7 @@ def collect_variant_means(eval_root: Path) -> tuple[dict, list[dict]]:
         for variant in VARIANTS:
             if skill not in VARIANTS[variant].get("skills", SKILLS):
                 continue
-            source, seeds = variant, CANONICAL_SEEDS
-            if variant == "baseline" and skill in BASELINE_OVERRIDES:
-                source, seeds = BASELINE_OVERRIDES[skill]
+            source, seeds = CELL_OVERRIDES.get((skill, variant), (variant, CANONICAL_SEEDS))
             seed_results = []
             missing_seeds = []
             for seed in seeds:

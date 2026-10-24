@@ -20,9 +20,13 @@ EVAL_SLURM_ROOT = EVAL_ROOT / "slurm"
 EVAL_LOG_ROOT = EVAL_ROOT / "logs"
 
 CANONICAL_SEEDS = (0, 1, 2)
-# Table 2's rotation baseline is baseline_nz over seeds 0-9 (submit_baseline_nz_extra_seeds.py);
-# rotation/baseline (3 seeds) is the ablation-matched baseline.
-BASELINE_OVERRIDES = {"rotation": ("baseline_nz", tuple(range(10)))}
+# Table 2 cells that read other runs than the row's variant: (skill, row variant) -> (variant, seeds).
+# The rotation baseline is baseline_nz over seeds 0-9 (submit_baseline_nz_extra_seeds.py; rotation/baseline,
+# 3 seeds, is the ablation-matched baseline), and the U-Net rotation cell is unet_sincos.
+CELL_OVERRIDES = {
+    ("rotation", "baseline"): ("baseline_nz", tuple(range(10))),
+    ("rotation", "unet"): ("unet_sincos", CANONICAL_SEEDS),
+}
 DATASET_SEED = 42
 EVAL_NUM_SAMPLES = 20
 EVAL_NUM_SAMPLING_STEPS = 250
@@ -37,9 +41,9 @@ TABLE_ROWS = {
     "+ concatenation": "baseline",
     "+ VAE latent": "vae",
     "+ pixel": "baseline",
-    "+ flow matching": "flow",
-    "+ U-Net (capacity-matched)": "unet",
-    "+ DiT-L (capacity scaling)": "dit_large",
+    "+ flow matching": "flow_tfix",
+    "+ U-Net (matched #params)": "unet",
+    "+ DiT-L (higher #params)": "dit_large",
 }
 
 VARIANTS = {
@@ -95,7 +99,7 @@ VARIANTS = {
         "conditioning": "concat",
         "latent": False,
         "flow_matching": True,
-        "flow_sigmoid_time": True,  # these runs drew training times t = sigmoid(u), u ~ U[0, 1]
+        "flow_sigmoid_time": True,  # these runs drew training times t = sigmoid(u), u ~ U[0, 1]; Table 2 uses flow_tfix
         "time_limit": "48:00:00",
     },
     # The flow-matching row retrained with t ~ U[0, 1], the default of vgl/flow_matching.py.

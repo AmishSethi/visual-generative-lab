@@ -40,7 +40,7 @@ from vgl.eval_rotation import (
 )
 from vgl.flow_matching import FlowMatching
 from paper_runs.table2.generate_canonical_datasets import render_circle
-from paper_runs.table2.manifest import DATASET_ROOT, EVAL_ROOT, RESULTS_ROOT, TABLE_ROWS
+from paper_runs.table2.manifest import CELL_OVERRIDES, DATASET_ROOT, EVAL_ROOT, RESULTS_ROOT, TABLE_ROWS
 
 
 SIZE_IOU_THRESHOLD = 0.90
@@ -787,7 +787,7 @@ def default_output_root(num_samples_per_condition: int, num_sampling_steps: int)
 def main():
     parser = argparse.ArgumentParser(description="Paper-locked Table 2 evaluator.")
     parser.add_argument("--skill", required=True, choices=sorted(EVALUATORS.keys()))
-    parser.add_argument("--variant", required=True, help="Canonical variant name (baseline, sinusoidal, rotary, adaln, vae, flow, unet).")
+    parser.add_argument("--variant", required=True, help="Variant name: a key of manifest.VARIANTS, or baseline_nz for rotation.")
     parser.add_argument("--seed", required=True, type=int)
     parser.add_argument("--num-samples-per-condition", type=int, default=20)
     parser.add_argument("--num-sampling-steps", type=int, default=250)
@@ -840,7 +840,10 @@ def main():
         selection = RunSelection(run_dir=run_dir, checkpoint=args.checkpoint.resolve(), run_config=load_json(run_dir / "run_config.json"))
     else:
         selection = latest_finished_run(args.skill, args.variant, args.seed)
-    table_rows = [row for row, mapped_variant in TABLE_ROWS.items() if mapped_variant == args.variant]
+    table_rows = [
+        row for row, mapped_variant in TABLE_ROWS.items()
+        if CELL_OVERRIDES.get((args.skill, mapped_variant), (mapped_variant,))[0] == args.variant
+    ]
 
     result = {
         "skill": args.skill,
