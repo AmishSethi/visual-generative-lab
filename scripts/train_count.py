@@ -687,7 +687,7 @@ if __name__ == "__main__":
     parser.add_argument("--log-every", type=int, default=100)
     parser.add_argument("--ckpt-every", type=int, default=2000)
     parser.add_argument("--resume-from", type=str, default=None, 
-                        help="Path to checkpoint to resume from, or 'latest' to find the latest checkpoint")
+                        help="Path to checkpoint to resume from")
     parser.add_argument("--selected-classes", type=float, nargs='+', default=None,
                         help="List of count classes to train on (e.g., 4 6 8 10 for even numbers, or omit for all classes)")
     parser.add_argument("--max-samples-per-class", type=int, default=None,

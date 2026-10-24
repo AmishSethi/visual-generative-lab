@@ -694,7 +694,7 @@ if __name__ == "__main__":
     parser.add_argument("--log-every", type=int, default=100)
     parser.add_argument("--ckpt-every", type=int, default=10000)
     parser.add_argument("--resume-from", type=str, default=None, 
-                        help="Path to checkpoint to resume from, or 'latest' to find the latest checkpoint")
+                        help="Path to checkpoint to resume from")
     parser.add_argument("--selected-positions", type=str, default=None,
                         help="Comma-separated list of positions to train on (format: 'x1_y1,x2_y2,...')")
     parser.add_argument("--max-samples-per-position", type=int, default=None,
