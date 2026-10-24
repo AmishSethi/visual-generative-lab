@@ -5,7 +5,8 @@ Reads <scores>/<pair>_cov<c>_seed<s>.json for every seed in TABLE3_SEEDS. A is t
 pair's two skills of the train accuracy (each a mean over seeds). B is test_compositional; at 75%
 coverage, pairs with out-of-range values also get C(<skill>) (test_prop_a_ood, test_prop_b_ood:
 that skill out of range) and D (test_both_ood). Each cell is the mean and sample standard
-deviation over seeds of the per-sample accuracy.
+deviation over seeds of the per-sample accuracy, printed rounded half up to one decimal as in
+Table 3; the JSON written by --output holds the unrounded values.
 """
 from __future__ import annotations
 
@@ -13,6 +14,7 @@ import argparse
 import json
 import statistics
 import sys
+from decimal import ROUND_HALF_UP, Decimal
 from pathlib import Path
 
 if __package__ in (None, ""):
@@ -24,7 +26,14 @@ SKILL_NAMES = {"radius": "size"}
 
 
 def mean_std(values):
-    return statistics.mean(values), (statistics.stdev(values) if len(values) > 1 else 0.0)
+    """Exact decimal mean and sample standard deviation of the per-seed values."""
+    exact = [Decimal(repr(float(v))) for v in values]
+    return statistics.mean(exact), (statistics.stdev(exact) if len(exact) > 1 else Decimal(0))
+
+
+def half_up(value):
+    """One decimal, rounded half up (0.25 -> 0.3)."""
+    return str(value.quantize(Decimal("0.1"), rounding=ROUND_HALF_UP))
 
 
 def main():
@@ -46,22 +55,23 @@ def main():
             if not all(p.exists() for p in paths):
                 continue
             runs = [json.loads(p.read_text())["splits"] for p in paths]
-            a_col = statistics.mean(statistics.mean(r["train"]["accuracy"][p] for r in runs) for p in props)
+            a_col = statistics.mean(mean_std([r["train"]["accuracy"][p] for r in runs])[0] for p in props)
             rows = [("test_compositional", "B")]
             if cov == 75 and "test_both_ood" in runs[0]:
                 name_a, name_b = (SKILL_NAMES.get(p, p) for p in props)
                 rows += [("test_prop_a_ood", f"C({name_a})"), ("test_prop_b_ood", f"C({name_b})"),
                          ("test_both_ood", "D")]
             for split, category in rows:
-                skills = {}
+                skills, line = {}, []
                 for p in props:
                     per_seed = [r[split]["accuracy"][p] for r in runs]
                     mean, std = mean_std(per_seed)
-                    skills[SKILL_NAMES.get(p, p)] = {"mean": mean, "std": std, "per_seed": per_seed}
+                    name = SKILL_NAMES.get(p, p)
+                    skills[name] = {"mean": float(mean), "std": float(std), "per_seed": per_seed}
+                    line.append(f"{name} {half_up(mean):>5} ± {half_up(std):>4}")
                 key = f"{pair}/cov{cov}" + ("" if split == "test_compositional" else f"/{split}")
-                cells[key] = {"category": category, "seeds": list(args.seeds), "A": a_col, "skills": skills}
-                line = "  ".join(f"{k} {v['mean']:5.1f} ± {v['std']:4.1f}" for k, v in skills.items())
-                print(f"{pair:<18} {cov:>3}%  {category:<14} A {a_col:5.1f}  {line}")
+                cells[key] = {"category": category, "seeds": list(args.seeds), "A": float(a_col), "skills": skills}
+                print(f"{pair:<18} {cov:>3}%  {category:<14} A {half_up(a_col):>5}  {'  '.join(line)}")
 
     if missing:
         print(f"missing {len(missing)} score files, e.g. {missing[:3]}")

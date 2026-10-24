@@ -4,11 +4,11 @@ from __future__ import annotations
 import argparse
 import csv
 import json
+import statistics
 import sys
 from collections import defaultdict
+from decimal import ROUND_HALF_UP, Decimal
 from pathlib import Path
-
-import numpy as np
 
 if __package__ in (None, ""):
     sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
@@ -27,6 +27,11 @@ SPLIT_COLUMN_NAMES = {
 
 def default_eval_root() -> Path:
     return EVAL_ROOT / "samples20_steps250_cfg1"
+
+
+def half_up(value: Decimal) -> str:
+    """One decimal, rounded half up from the exact value, as in Table 2 (36.25 -> 36.3)."""
+    return str(value.quantize(Decimal("0.1"), rounding=ROUND_HALF_UP))
 
 
 def load_json(path: Path) -> dict:
@@ -63,10 +68,11 @@ def collect_variant_means(eval_root: Path) -> tuple[dict, list[dict]]:
                 missing.append({"skill": skill, "variant": source, "missing_seeds": missing_seeds})
                 continue
 
+            # Exact decimal mean and sample standard deviation (ddof = 1) of the per-seed accuracies.
             for split_name in ("train", "interp", "extra"):
-                split_values = [seed_result[split_name]["accuracy"] for seed_result in seed_results]
-                means[(skill, variant)][split_name] = float(np.mean(split_values))
-                means[(skill, variant)][f"{split_name}_std"] = float(np.std(split_values))
+                split_values = [Decimal(repr(float(seed_result[split_name]["accuracy"]))) for seed_result in seed_results]
+                means[(skill, variant)][split_name] = statistics.mean(split_values)
+                means[(skill, variant)][f"{split_name}_std"] = statistics.stdev(split_values)
 
     return means, missing
 
@@ -79,7 +85,12 @@ def render_table_rows(means: dict) -> list[dict]:
             stats = means.get((skill, variant))
             for split_name, column_name in SPLIT_COLUMN_NAMES.items():
                 key = f"{skill}_{split_name}"
-                row[key] = None if stats is None else round(stats[split_name], 1)
+                if stats is None:
+                    row[key] = None
+                elif skill == "count" and split_name == "interp":
+                    row[key] = "-"  # count has no interpolation cell in Table 2
+                else:
+                    row[key] = f"{half_up(stats[split_name])} ± {half_up(stats[f'{split_name}_std'])}"
         rendered.append(row)
     return rendered
 
