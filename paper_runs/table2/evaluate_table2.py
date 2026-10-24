@@ -490,7 +490,7 @@ def evaluate_size_split(
             total += 1
             split_ious.append(float(metrics["iou"]))
             all_ious.append(float(metrics["iou"]))
-        condition_accuracies[Serialize_key := serialize_query(value)] = {
+        condition_accuracies[serialize_query(value)] = {
             "accuracy": 100.0 * split_successes / len(samples_dict[value]),
             "mean_iou": float(np.mean(split_ious)),
             "num_samples": len(samples_dict[value]),
@@ -526,7 +526,7 @@ def evaluate_count_split(
             total += 1
             split_abs_errors.append(float(abs_error))
             abs_errors.append(float(abs_error))
-        condition_accuracies[Serialize_key := serialize_query(value)] = {
+        condition_accuracies[serialize_query(value)] = {
             "accuracy": 100.0 * split_successes / len(samples_dict[value]),
             "mean_abs_count_error": float(np.mean(split_abs_errors)),
             "num_samples": len(samples_dict[value]),
@@ -574,7 +574,7 @@ def evaluate_rotation_split(
             if detected:
                 split_abs_errors.append(float(metrics["angle_error_abs"]))
                 abs_errors.append(float(metrics["angle_error_abs"]))
-        condition_accuracies[Serialize_key := serialize_query(value)] = {
+        condition_accuracies[serialize_query(value)] = {
             "accuracy": 100.0 * split_successes / len(samples_dict[value]),
             "detection_rate": 100.0 * split_detection / len(samples_dict[value]),
             "mean_abs_angle_error": float(np.mean(split_abs_errors)) if split_abs_errors else float("inf"),
@@ -629,7 +629,7 @@ def evaluate_position_split(
             if detected:
                 split_errors.append(float(metrics["position_error"]))
                 errors.append(float(metrics["position_error"]))
-        condition_accuracies[Serialize_key := serialize_query(value)] = {
+        condition_accuracies[serialize_query(value)] = {
             "accuracy": 100.0 * split_successes / len(samples_dict[value]),
             "detection_rate": 100.0 * split_detection / len(samples_dict[value]),
             "mean_position_error": float(np.mean(split_errors)) if split_errors else float("inf"),
