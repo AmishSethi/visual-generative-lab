@@ -211,6 +211,8 @@ DATASET_SPECS = {
         "max_angle": 315,
         "step_degrees": 1,
         "shape_type": "arrow",
+        "arrow_color": (255, 100, 100),     # every arrow in this colour on white, with no noise
+        "background_color": (255, 255, 255),
         "seed": DATASET_SEED,
     },
     "count": {

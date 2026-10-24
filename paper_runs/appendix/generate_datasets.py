@@ -55,7 +55,9 @@ BASE_SPECS = {
         "seed": DATASET_SEED,
     },
     # Matches paper_runs.table2.manifest DATASET_SPECS["rotation"] apart from
-    # total_images, which build_scaling overrides.
+    # total_images, which build_scaling overrides, and the fixed arrow and
+    # background colours of the Table 2 set: this one uses the random palettes
+    # and noise.
     "rotation": {
         "image_size": 64,
         "shape_size": 20,
