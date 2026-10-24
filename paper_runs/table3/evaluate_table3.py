@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 """
-Paper-locked Table 3 evaluator.
+Earlier Table 3 scorer (per-combination means, 2-degree rotation), not used for the paper;
+Table 3 uses sample_table3.py, score_table3.py and aggregate_scores.py.
 
 For each (pair, coverage, seed) tuple, loads the trained compositional model
 and evaluates it on the test set using vgl/eval_compositional.py's machinery.
@@ -43,7 +44,6 @@ from paper_runs.table3.manifest import (
 )
 
 
-# Thresholds matching Table 2 and paper methodology
 SIZE_IOU_THRESHOLD = 0.90
 POSITION_ERROR_THRESHOLD = 2.0  # pixels
 ROTATION_ERROR_THRESHOLD = 2.0  # degrees
@@ -118,18 +118,14 @@ def compute_skill_accuracies(eval_results: list[dict], include_properties: list[
     accuracies = {}
     for prop in include_properties:
         if prop == "radius":
-            # IoU-based: radius_error is relative error, convert to IoU-like metric
-            # The eval uses radius_error = |detected - expected| / expected
-            # We threshold: success if detected radius gives IoU >= 0.90 with GT circle
+            # radius_error is the relative error |detected - expected| / expected;
+            # a sample passes when it is below 0.15 (no IoU is computed).
             successes = 0
             total = 0
             for r in eval_results:
                 if r.get("detection_success", False):
-                    # Approximate IoU from relative radius error
                     rel_err = r.get("radius_error", float("inf"))
-                    # For circles: IoU ≈ 1 - 2*|Δr|/r when error is small
-                    # More precisely, compute area overlap
-                    if rel_err < 0.15:  # rough filter
+                    if rel_err < 0.15:
                         successes += 1
                     total += 1
                 else:
@@ -172,7 +168,7 @@ def compute_skill_accuracies(eval_results: list[dict], include_properties: list[
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Paper-locked Table 3 evaluator.")
+    parser = argparse.ArgumentParser(description="Earlier Table 3 scorer (per-combination means, 2-degree rotation), not used for the paper; Table 3 uses sample_table3.py, score_table3.py and aggregate_scores.py.")
     parser.add_argument("--pair", required=True, choices=sorted(SKILL_PAIRS.keys()))
     parser.add_argument("--coverage", required=True, type=int, choices=[25, 50, 75])
     parser.add_argument("--seed", required=True, type=int)

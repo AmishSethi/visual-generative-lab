@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 """
-Aggregate Table 3 evaluation results across 3 seeds.
+Aggregate the results of the earlier Table 3 scorer (evaluate_table3.py) across 3 seeds; not used for
+the paper, whose Table 3 comes from sample_table3.py, score_table3.py and aggregate_scores.py.
 Outputs mean ± std for each (pair, coverage, category, skill) entry.
 """
 from __future__ import annotations
