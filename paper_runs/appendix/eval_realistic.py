@@ -33,7 +33,7 @@ import paper_runs.table2.evaluate_table2 as t2
 from paper_runs.appendix import subsample
 from paper_runs.appendix.manifest import DATASET_ROOT, EVAL_ROOT, RESULTS_ROOT
 from paper_runs.appendix.realistic import (
-    circle_mask, object_mask, render_arrow, render_circle, render_circles,
+    SATURATION_KEY, circle_mask, object_mask, render_arrow, render_circle, render_circles,
 )
 from paper_runs.table2.generate_canonical_datasets import sample_non_overlapping_centers
 from vgl.eval_radius import generate_samples as generate_radius_samples, load_model as load_radius_model
@@ -58,8 +58,19 @@ def disc_mask(radius, cx=0.0, cy=0.0, size=IMAGE_SIZE):
     return circle_mask(radius, cx, cy, size)
 
 
-def score_size(image, radius):
+def size_mask(image):
+    """object_mask, except when its opening leaves fewer than 20 px (radius 1 and 2 disks): then the largest
+    8-connected component of the unopened saturation mask, which drops the specks the opening removes."""
     mask = object_mask(image)
+    if mask.sum() >= 20:
+        return mask
+    raw = (cv2.cvtColor(image, cv2.COLOR_RGB2HSV)[..., 1] > SATURATION_KEY).astype(np.uint8)
+    n, labels, stats, _ = cv2.connectedComponentsWithStats(raw, connectivity=8)
+    return raw if n <= 1 else (labels == 1 + int(np.argmax(stats[1:, cv2.CC_STAT_AREA]))).astype(np.uint8)
+
+
+def score_size(image, radius):
+    mask = size_mask(image)
     gt = disc_mask(radius)
     union = np.logical_or(mask > 0, gt > 0).sum()
     iou = float(np.logical_and(mask > 0, gt > 0).sum() / union) if union else 0.0
@@ -120,7 +131,7 @@ def validate(n=60, seed=0):
     out = {}
 
     ious = [score_size(render_circle(r, 0, 0, IMAGE_SIZE, rng), r)["iou"]
-            for r in range(5, 21) for _ in range(n // 16 + 1)]
+            for r in range(SIZE_EXTRAP_MIN, SIZE_EXTRAP_MAX + 1) for _ in range(n // 16 + 1)]
     out["size_pct_iou_above_threshold"] = 100.0 * float(np.mean([i >= SIZE_IOU_THRESHOLD for i in ious]))
     out["size_mean_iou"] = float(np.mean(ious))
 
