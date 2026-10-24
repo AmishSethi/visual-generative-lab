@@ -18,14 +18,13 @@ authors = [
 keywords = ["diffusion models", "generalization", "generative models", "benchmark"]
 classifiers = [
   "Intended Audience :: Science/Research",
-  "License :: Other/Proprietary License",
+  "License :: Free for non-commercial use",
   "Programming Language :: Python :: 3",
   "Topic :: Scientific/Engineering :: Artificial Intelligence",
 ]
 dynamic = ["dependencies"]
 
 [project.urls]
-Paper = "https://arxiv.org/abs/XXXX.XXXXX"
 Repository = "https://github.com/AmishSethi/visual-generative-lab"
 
 [tool.setuptools.dynamic]

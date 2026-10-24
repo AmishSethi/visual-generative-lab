@@ -1,8 +1,10 @@
 # Visual Generative Lab (VGL)
 
-Code for **"Do Diffusion Models Learn to Generalize Basic Visual Skills?"**
+Code for **"Do Diffusion Models Learn to Generalize Basic Visual Skills?"** (NeurIPS 2026)
 
-[Paper](https://arxiv.org/abs/XXXX.XXXXX) · [Datasets](#datasets) · [Pretrained checkpoints](#pretrained-checkpoints)
+Amish Sethi, Boya Zeng, Wenhao Chai, Zhuang Liu · Princeton University
+
+[Datasets](#datasets) · [Pretrained checkpoints](#pretrained-checkpoints) · [License](#license)
 
 Diffusion models are usually evaluated with distribution-level scores (FID, IS) or human preference,
 neither of which tells you whether a model has *learned a visual skill* or is reproducing training
@@ -319,14 +321,20 @@ Every metric is rule-based, with no learned components, so scores are reproducib
 
 ---
 
+## License
+
+The code is released under CC BY-NC 4.0 ([LICENSE](LICENSE)), inherited from DiT; `vgl/diffusion/` keeps
+the MIT license of ADM ([vgl/diffusion/LICENSE](vgl/diffusion/LICENSE)). The checkpoints are released
+under CC BY-NC 4.0.
+
 ## Citation
 
 ```bibtex
-@article{sethi2026vgl,
-  title   = {Do Diffusion Models Learn to Generalize Basic Visual Skills?},
-  author  = {Sethi, Amish and Zeng, Boya and Chai, Wenhao and Liu, Zhuang},
-  journal = {arXiv preprint arXiv:XXXX.XXXXX},
-  year    = {2026}
+@inproceedings{sethi2026vgl,
+  title     = {Do Diffusion Models Learn to Generalize Basic Visual Skills?},
+  author    = {Sethi, Amish and Zeng, Boya and Chai, Wenhao and Liu, Zhuang},
+  booktitle = {Advances in Neural Information Processing Systems (NeurIPS)},
+  year      = {2026}
 }
 ```
 
