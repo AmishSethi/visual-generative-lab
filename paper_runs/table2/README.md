@@ -24,5 +24,5 @@ python paper_runs/table2/submit_baseline_nz_extra_seeds.py --seeds 0 1 2 3 4 5 6
 To restrict submission to a subset:
 
 ```bash
-python paper_runs/table2/submit_training.py --skills size position --variants baseline flow unet --seeds 0 1 2 --submit
+python paper_runs/table2/submit_training.py --skills size position --variants baseline flow_tfix unet --seeds 0 1 2 --submit
 ```
