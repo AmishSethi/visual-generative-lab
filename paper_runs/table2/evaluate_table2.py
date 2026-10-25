@@ -773,7 +773,8 @@ def evaluate_position(args, selection: RunSelection, output_dir: Path) -> dict:
         args.max_conditions_per_split,
     )
     config = build_position_config(selection, metadata)
-    training_positions = queries["train"]
+    # The whole training grid, for the nearest-training lookup: a conditions file can empty the train split.
+    training_positions = [round_pair(tuple(position)) for position in metadata["positions"]]
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     model = load_position_model(config, device)
     sampler = create_sampler(config, args.num_sampling_steps)

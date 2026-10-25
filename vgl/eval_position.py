@@ -17,6 +17,10 @@ from vgl.models_position import DiT_models_position as DiT_models
 from vgl.unet_models_position import UNet_models_position as UNet_models
 from diffusers.models import AutoencoderKL
 
+# Grey levels between Otsu's two classes below which a frame is blank (no object), as
+# COUNT_MIN_CONTRAST in paper_runs/table2/evaluate_table2.py.
+POSITION_MIN_CONTRAST = 20.0
+
 
 def find_nearest_training_position(test_pos, training_positions):
     """
@@ -50,8 +54,14 @@ def extract_circle_center_debug(image, expected_radius=8, debug=False):
         gray = img_array
     
     # Apply thresholding to get binary mask
-    _, mask = cv2.threshold(gray, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
-    
+    thresh, mask = cv2.threshold(gray, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
+
+    # Blank frame: Otsu always splits the frame in two, so a frame with no object still gives a
+    # mask. Require an absolute contrast between the two classes, as the count detector does.
+    dark, light = gray[gray <= thresh], gray[gray > thresh]
+    if not (dark.size and light.size) or float(light.mean()) - float(dark.mean()) < POSITION_MIN_CONTRAST:
+        return 0.0, 0.0, False, {'mask_pixels': 0.0, 'mask': None}
+
     # Invert if needed (ensure circle is white)
     if np.mean(mask) > 127:
         mask = 255 - mask
@@ -69,9 +79,10 @@ def extract_circle_center_debug(image, expected_radius=8, debug=False):
         # Note: ndimage returns (row, col) which is (y, x) in image coordinates
         cy, cx = ndimage.center_of_mass(mask_binary)
         
-        # Convert to coordinates relative to image center
-        img_center_x = img_array.shape[1] / 2  # width / 2
-        img_center_y = img_array.shape[0] / 2  # height / 2
+        # Convert to coordinates relative to image center. center_of_mass puts pixel i at i, so the
+        # center of a W-pixel frame is (W - 1) / 2, where the renderers place offset (0, 0).
+        img_center_x = (img_array.shape[1] - 1) / 2
+        img_center_y = (img_array.shape[0] - 1) / 2
         
         # x_rel: positive = right of center, negative = left of center
         # y_rel: positive = below center, negative = above center
@@ -349,12 +360,14 @@ def generate_samples(
                             device=device,
                         )
                 else:
-                    # Diffusion sampling
+                    # Diffusion sampling. The predicted clean image is clipped to [-1, 1] in pixel
+                    # space only: scaled VAE latents often exceed 1, so latent models are not
+                    # clipped (as in DiT's sample.py and eval_rotation.py).
                     sample = diffusion.p_sample_loop(
                         model,
                         z_shape,
                         noise=z,
-                        clip_denoised=True,
+                        clip_denoised=not use_latent_diffusion,
                         model_kwargs=dict(pos=pos_tensor),
                         progress=False,
                         device=device,

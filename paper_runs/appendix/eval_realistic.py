@@ -83,7 +83,8 @@ def score_position(image, target):
     ys, xs = np.nonzero(mask)
     if len(ys) < MIN_BLOB_AREA:
         return {"error": float("inf"), "detected": False}
-    cx, cy = xs.mean() - IMAGE_SIZE / 2, ys.mean() - IMAGE_SIZE / 2
+    # Pixel i is at coordinate i, so the frame center is (IMAGE_SIZE - 1) / 2, where the renderer puts offset 0.
+    cx, cy = xs.mean() - (IMAGE_SIZE - 1) / 2, ys.mean() - (IMAGE_SIZE - 1) / 2
     return {"error": float(np.hypot(cx - target[0], cy - target[1])), "detected": True}
 
 

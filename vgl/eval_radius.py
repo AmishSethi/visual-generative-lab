@@ -385,7 +385,9 @@ def generate_samples(
                             device=device,
                         )
                 else:
-                    # Diffusion sampling
+                    # Diffusion sampling. The predicted clean image is clipped to [-1, 1] in pixel
+                    # space only: scaled VAE latents often exceed 1, so latent models are not
+                    # clipped (as in DiT's sample.py and eval_rotation.py).
                     if use_cfg and has_forward_with_cfg:
                         # Use the model's forward_with_cfg method
                         # Create doubled radius tensor: [conditional, unconditional]
@@ -412,7 +414,7 @@ def generate_samples(
                             cfg_forward,
                             z_shape,
                             noise=z,
-                            clip_denoised=True,
+                            clip_denoised=not use_latent_diffusion,
                             model_kwargs={},
                             progress=False,
                             device=device,
@@ -429,7 +431,7 @@ def generate_samples(
                             model,
                             z_shape,
                             noise=z,
-                            clip_denoised=True,
+                            clip_denoised=not use_latent_diffusion,
                             model_kwargs=dict(r=r),
                             progress=False,
                             device=device,
