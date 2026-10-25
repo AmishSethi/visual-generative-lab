@@ -1,5 +1,6 @@
 #!/usr/bin/env python
-"""Generate and submit 3-seed compositional evaluation jobs for Table 3."""
+"""Generate and submit 3-seed jobs for the earlier Table 3 scorer (evaluate_table3.py), not used for the
+paper; Table 3 uses sample_table3.py, score_table3.py and aggregate_scores.py."""
 import argparse
 import os as _os
 import subprocess
@@ -134,7 +135,7 @@ def render_slurm_script(pair_name, coverage, seed, args):
 
 def main():
     default_output = EVAL_ROOT / "samples20_steps250_cfg1"
-    parser = argparse.ArgumentParser(description="Generate or submit Table 3 evaluation jobs.")
+    parser = argparse.ArgumentParser(description="Generate or submit jobs for the earlier Table 3 scorer (evaluate_table3.py).")
     parser.add_argument("--pairs", nargs="+", default=list(SKILL_PAIRS.keys()), choices=sorted(SKILL_PAIRS.keys()))
     parser.add_argument("--coverages", nargs="+", type=int, default=list(COVERAGES), choices=sorted(COVERAGES))
     parser.add_argument("--seeds", nargs="+", type=int, default=list(CANONICAL_SEEDS))

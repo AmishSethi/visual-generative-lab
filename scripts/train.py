@@ -441,6 +441,8 @@ def main(args):
                     start_epoch = train_steps // steps_per_epoch
                     logger.info(f"Extracted from filename: step {train_steps}, calculated epoch {start_epoch}")
             
+            # With the +1 above, a resumed run skips the rest of the interrupted epoch and the next
+            # one. The paper's runs resumed this way, so the behaviour is kept.
             start_epoch = start_epoch + 1  # Start from next epoch
             
             logger.info(f"Resumed from epoch {start_epoch}, step {train_steps}")
@@ -591,6 +593,8 @@ def main(args):
                 if accum_steps < grad_accum_steps:
                     continue
                 
+                # The clip comes after the update, so it has no effect. The paper's runs trained this
+                # way, so the order is kept.
                 opt.step()
                 torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=1.0)
                 opt.zero_grad()
@@ -672,7 +676,7 @@ if __name__ == "__main__":
     parser.add_argument("--log-every", type=int, default=100)
     parser.add_argument("--ckpt-every", type=int, default=2000)
     parser.add_argument("--resume-from", type=str, default=None, 
-                        help="Path to checkpoint to resume from, or 'latest' to find the latest checkpoint")
+                        help="Path to checkpoint to resume from")
     parser.add_argument("--selected-classes", type=float, nargs='+', default=None,
                         help="List of radius classes to train on (e.g., 1 2 3 4 for whole numbers, 1.5 2.5 3.5 for decimals, or omit for all classes)")
     parser.add_argument("--max-samples-per-class", type=int, default=None,

@@ -33,23 +33,24 @@ class EvalArgs:
         self.num_sampling_steps = steps
         self.eval_batch_size = batch_size
         self.max_conditions_per_split = max_conditions
-        self.size_extrap_min = t2.SIZE_EXTRAP_MIN
-        self.size_extrap_max = t2.SIZE_EXTRAP_MAX
-        self.position_extrap_margin = t2.POSITION_EXTRAP_MARGIN
-        self.position_extrap_min_margin = t2.POSITION_EXTRAP_MIN_MARGIN
+        # The data-scaling grid: radii 1-4 and 21-25, positions from the training boundary.
+        self.size_extrap_min = 1
+        self.size_extrap_max = 25
+        self.position_extrap_margin = 6.0
+        self.position_extrap_min_margin = 0.0
 
 
 def main():
     parser = argparse.ArgumentParser(description="Evaluate the data-scaling sweep.")
-    parser.add_argument("--skills", nargs="+", default=["size", "position", "count"])
+    parser.add_argument("--skills", nargs="+", default=["size", "position", "rotation", "count"])
     parser.add_argument("--sizes", nargs="+", default=[f"{n // 1000}k" for n in SCALING_SIZES])
     parser.add_argument("--seed", type=int, default=0)
     parser.add_argument("--num-samples", type=int, default=20)
     parser.add_argument("--steps", type=int, default=250)
     parser.add_argument("--eval-batch-size", type=int, default=20)
-    parser.add_argument("--max-conditions-per-split", type=int, default=None,
-                        help="Position has 1024 conditions per split; cap it for a "
-                             "sub-sampled but paper-comparable number.")
+    parser.add_argument("--max-conditions-per-split", type=int, default=50,
+                        help="Conditions per split, spread evenly (Table 7 scores 50 for position "
+                             "and rotation; size and count have fewer, so they are scored in full).")
     parser.add_argument("--out", type=Path, default=EVAL_ROOT / "scaling_results.json")
     args = parser.parse_args()
 

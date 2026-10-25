@@ -252,6 +252,17 @@ def generate_rotation_dataset(output_dir, spec):
         class_dir = output_dir / str(angle)
         class_dir.mkdir(parents=True, exist_ok=True)
         for sample_idx in range(class_counts[angle]):
+            if "arrow_color" in spec:
+                # One arrow colour on one background, no noise (the Table 2 rotation set).
+                image = render_arrow(
+                    angle_degrees=angle,
+                    image_size=spec["image_size"],
+                    shape_size=spec["shape_size"],
+                    fill_rgb=tuple(spec["arrow_color"]),
+                    background_rgb=tuple(spec["background_color"]),
+                )
+                image.save(class_dir / f"arrow_{sample_idx:05d}.png")
+                continue
             image = render_arrow(
                 angle_degrees=angle,
                 image_size=spec["image_size"],
@@ -285,13 +296,22 @@ def generate_count_dataset(output_dir, spec):
         for sample_idx in range(class_counts[count]):
             image = Image.new("RGB", (spec["image_size"], spec["image_size"]), background_color(rng))
             draw = ImageDraw.Draw(image)
-            centers = lattice_centers(
-                count=count,
-                radius=spec["circle_radius"],
-                gap=spec["lattice_gap"],
-                image_size=spec["image_size"],
-                rng=rng,
-            )
+            if "lattice_gap" in spec:
+                centers = lattice_centers(
+                    count=count,
+                    radius=spec["circle_radius"],
+                    gap=spec["lattice_gap"],
+                    image_size=spec["image_size"],
+                    rng=rng,
+                )
+            else:
+                # Packed random placement, used by the appendix count datasets.
+                centers = sample_non_overlapping_centers(
+                    count=count,
+                    radius=spec["circle_radius"],
+                    image_size=spec["image_size"],
+                    rng=rng,
+                )
             for center_x, center_y in centers:
                 fill_rgb = foreground_color(rng)
                 bbox = [

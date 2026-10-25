@@ -1,8 +1,10 @@
 # Visual Generative Lab (VGL)
 
-Code for **"Do Diffusion Models Learn to Generalize Basic Visual Skills?"**
+Code for **"Do Diffusion Models Learn to Generalize Basic Visual Skills?"** (NeurIPS 2026)
 
-[Paper](https://arxiv.org/abs/XXXX.XXXXX) · [Datasets](#datasets) · [Pretrained checkpoints](#pretrained-checkpoints)
+Amish Sethi, Boya Zeng, Wenhao Chai, Zhuang Liu · Princeton University
+
+[Datasets](#datasets) · [Pretrained checkpoints](#pretrained-checkpoints) · [License](#license)
 
 Diffusion models are usually evaluated with distribution-level scores (FID, IS) or human preference,
 neither of which tells you whether a model has *learned a visual skill* or is reproducing training
@@ -56,59 +58,59 @@ Thresholds are listed under [Evaluation metrics](#evaluation-metrics).
   <tbody>
     <tr>
       <td><strong>DiT-S/2 (baseline)</strong></td>
-      <td>100.0</td><td>47.3</td>
+      <td>100.0</td><td>51.5</td>
       <td>100.0</td><td>31.0</td>
       <td>100.0</td><td>68.0</td>
-      <td>99.7</td><td>34.6</td>
+      <td>100.0</td><td>52.5</td>
     </tr>
     <tr>
       <td>+ sinusoidal emb.</td>
       <td>100.0</td><td>7.1</td>
       <td>100.0</td><td>0.0</td>
       <td>100.0</td><td>26.6</td>
-      <td>99.2</td><td>19.2</td>
+      <td>98.6</td><td>20.4</td>
     </tr>
     <tr>
       <td>+ rotary emb.</td>
-      <td>100.0</td><td>10.4</td>
+      <td>100.0</td><td>9.9</td>
       <td>100.0</td><td>0.0</td>
       <td>100.0</td><td>37.6</td>
-      <td>99.7</td><td>34.2</td>
+      <td>100.0</td><td>36.3</td>
     </tr>
     <tr>
       <td>+ AdaLN</td>
-      <td>100.0</td><td>31.4</td>
+      <td>100.0</td><td>31.0</td>
       <td>100.0</td><td>63.6</td>
       <td>100.0</td><td>58.5</td>
-      <td>99.7</td><td>45.0</td>
+      <td>100.0</td><td>72.5</td>
     </tr>
     <tr>
       <td>+ VAE latent</td>
-      <td>82.8</td><td>6.1</td>
+      <td>82.8</td><td>5.6</td>
       <td>99.8</td><td>0.1</td>
       <td>100.0</td><td>21.2</td>
-      <td>66.9</td><td>45.8</td>
+      <td>71.7</td><td>43.8</td>
     </tr>
     <tr>
       <td>+ flow matching</td>
-      <td>49.5</td><td>24.0</td>
-      <td>100.0</td><td>12.1</td>
-      <td>100.0</td><td>57.8</td>
-      <td>10.3</td><td>5.0</td>
+      <td>100.0</td><td>47.3</td>
+      <td>100.0</td><td>26.6</td>
+      <td>100.0</td><td>51.0</td>
+      <td>100.0</td><td>24.2</td>
     </tr>
     <tr>
-      <td>+ U-Net (capacity-matched)</td>
-      <td>100.0</td><td>19.9</td>
-      <td>100.0</td><td>50.0</td>
+      <td>+ U-Net (matched #params)</td>
+      <td>100.0</td><td>21.2</td>
+      <td>100.0</td><td>39.9</td>
       <td>100.0</td><td>11.2</td>
-      <td>99.7</td><td>72.5</td>
+      <td>99.7</td><td>79.6</td>
     </tr>
     <tr>
-      <td>+ DiT-L (capacity scaling)</td>
-      <td>100.0</td><td>42.5</td>
-      <td>100.0</td><td>32.8</td>
+      <td>+ DiT-L (higher #params)</td>
+      <td>100.0</td><td>44.5</td>
+      <td>100.0</td><td>34.7</td>
       <td>100.0</td><td>62.0</td>
-      <td>100.0</td><td>63.3</td>
+      <td>100.0</td><td>72.1</td>
     </tr>
   </tbody>
 </table>
@@ -131,12 +133,15 @@ conda activate vgl
 pip install -e .
 ```
 
-Or with pip (assumes a working PyTorch ≥ 2.0 + CUDA install):
+Or with pip (install PyTorch 2.5.1 and torchvision 0.20.1 for your CUDA version first):
 
 ```bash
 pip install -r requirements.txt
 pip install -e .
 ```
+
+The text-encoder and text-to-image appendix scripts (`paper_runs/appendix/build_text_tables.py`,
+`t2i_*.py`) run in a separate environment: `pip install -r requirements-appendix.txt`.
 
 Set the storage root for datasets, checkpoints and results (defaults to `~/vgl-data`):
 
@@ -168,7 +173,7 @@ python -m paper_runs.table2.generate_canonical_datasets --skills size --output-r
 torchrun --standalone --nproc_per_node=1 scripts/train.py \
   --data-path $T2/datasets/size --results-dir $T2/results/size/baseline/seed_0 \
   --model DiT-S/2 --image-size 64 --epochs 1000 --global-batch-size 128 --global-seed 0 \
-  --radius-embedding-type linear --conditioning-method concat
+  --num-workers 4 --radius-embedding-type linear --conditioning-method concat
 
 # 3. evaluate on train / interp / extra with the paper's protocol
 python -m paper_runs.table2.evaluate_table2 --skill size --variant baseline --seed 0
@@ -187,6 +192,8 @@ Each skill has its own training entry point, because the conditioning differs:
 | count | `scripts/train_count.py` | discrete integer |
 | multi-skill | `scripts/train_compositional.py` | `--include-properties` |
 
+In file names and flags the size skill is called radius (e.g. `--radius-embedding-type`).
+
 ---
 
 ## Repository layout
@@ -203,11 +210,12 @@ vgl/                       importable library
   eval_radius.py           size sampler + rule-based metric
   eval_position.py         position sampler + metric
   eval_rotation.py         rotation sampler + metric
+  eval_compositional.py    multi-skill test sets (and the earlier Table 3 scorer's metrics)
   reproducibility_utils.py seeding, worker init, run-config logging
 
-scripts/                   training entry points (one per skill)
+scripts/                   training entry points (one per skill) and the two-skill dataset generators
 
-paper_runs/              exact code that produced each paper table
+paper_runs/              code behind the paper's tables (the paper's checklist lists what is not included)
   table2/                single-skill generalization (Table 2)
   table3/                compositional generalization (Table 3)
   appendix/              experiments behind the appendix: data scaling, resolution, token-matched
@@ -221,38 +229,60 @@ paper_runs/              exact code that produced each paper table
 
 `paper_runs/` is the reproduction layer. Each subdirectory has a `manifest.py` holding the canonical
 paths and per-skill configuration, `submit_*.py` scripts that emit SLURM jobs, and the **paper-locked
-evaluators** (`evaluate_table2.py`, `evaluate_table3.py`, and the `eval_*.py` scripts under `appendix/`),
-the code that produced the published numbers.
+evaluators** (`evaluate_table2.py`, `score_table3.py`, and the `eval_*.py` scripts under `appendix/`).
 
 ```bash
 # Table 2: single-skill generalization, all skills x all variants x 3 seeds
-python -m paper_runs.table2.submit_training --skills size position rotation count --seeds 0 1 2
+python -m paper_runs.table2.generate_canonical_datasets --skills size position rotation count
+# without --submit, the submit_* scripts only write the Slurm scripts
+python -m paper_runs.table2.submit_training --skills size position rotation count --seeds 0 1 2 --submit
+# the rotation baseline cell is baseline_nz (null-embedding type zero) over seeds 0-9
+python -m paper_runs.table2.submit_baseline_nz_extra_seeds --seeds 0 1 2 3 4 5 6 7 8 9 --submit
 python -m paper_runs.table2.evaluate_table2 --skill size --variant baseline --seed 0
+python -m paper_runs.table2.evaluate_table2 --skill rotation --variant baseline_nz --seed 0
+# DiT-L and U-Net position: train and interp on a fixed random 100-condition subset, extra in full
+python -m paper_runs.table2.evaluate_table2 --skill position --variant dit_large --seed 0 \
+  --conditions-file paper_runs/table2/position_subsample_100.json
 python -m paper_runs.table2.aggregate_table2
 
-# Table 3: compositional generalization
+# Table 3: compositional generalization, each cell over seeds 0-5
 python -m paper_runs.table3.generate_datasets
-python -m paper_runs.table3.submit_training
-python -m paper_runs.table3.evaluate_table3 --pair color_shape --coverage 75 --seed 0
-python -m paper_runs.table3.aggregate_table3
+python -m paper_runs.table3.submit_training --seeds 0 1 2 3 4 5 --submit
+python -m paper_runs.table3.sample_table3 --pair color_shape --coverage 75 --seed 0
+mkdir -p $VGL_ROOT/MORE_SEEDS/table3/scores
+python -m paper_runs.table3.score_table3 --samples $VGL_ROOT/MORE_SEEDS/table3/samples/color_shape/cov75/seed_0 \
+  --out $VGL_ROOT/MORE_SEEDS/table3/scores/color_shape_cov75_seed0.json
+python -m paper_runs.table3.aggregate_scores
+
+# Figure 4(b) and Figure 5: fixed-budget color + shape datasets
+# (--coverage 25, 50 or 75; --train-samples 5000, 10000 or 15000)
+python scripts/generate_color_shape_dataset.py --output-dir $VGL_ROOT/datasets/color_shape_composition_cov25_samples15k \
+  --coverage 25 --train-samples 15000
 ```
 
-Everything is written under `$VGL_ROOT`; each `manifest.py` reads that variable.
+Everything is written under `$VGL_ROOT` (Table 2 under `MORE_SEEDS/table2`; Table 3's runs under
+`MORE_SEEDS/table3` and its datasets under `datasets/compositional_experiments_2prop`; the appendix
+under `appendix`); each `manifest.py` reads that variable.
+
+Table 3 samples the online (non-EMA) weights of each run's final checkpoint, 20 samples per
+combination, and scores every sample on its own. `evaluate_table3.py` and `aggregate_table3.py` are an
+earlier scorer; the paper's Table 3 uses `score_table3.py`.
 
 
 ---
 
 ## Datasets
 
-All datasets are synthetic, generated deterministically from a fixed seed, so they can be rebuilt:
+All datasets are synthetic. The Table 2 datasets are rebuilt deterministically with:
 
 ```bash
 python paper_runs/table2/generate_canonical_datasets.py --skills size position rotation count
 ```
 
-Datasets are `ImageFolder`-structured with the skill value encoded in the directory name.
+For the Table 3 datasets the seed fixes the training combinations but not the colour jitter or pixel
+noise.
 
-Compositional pairs that include rotation without shape render an arrow; set `VGL_ROTATION_SHAPE=arrow` when evaluating them.
+Datasets are `ImageFolder`-structured with the skill value encoded in the directory name.
 
 | skill | type | training domain | extrapolation values |
 |---|---|---|---|
@@ -267,19 +297,22 @@ Compositional pairs that include rotation without shape render an arrow; set `VG
 
 ## Pretrained checkpoints
 
-The checkpoints behind Table 2 (all skills, all variants, every seed; 128 files, 98 GB) are on the
-Hugging Face Hub at [ASethi04/vgl-checkpoints](https://huggingface.co/ASethi04/vgl-checkpoints), laid out as
-`table2/<skill>/<variant>/seed_<n>/final.pt` with each run's `run_config.json` beside it:
+The Table 2 checkpoints are on the Hugging Face Hub at
+[ASethi04/vgl-checkpoints](https://huggingface.co/ASethi04/vgl-checkpoints) (128 files, 98 GB), except
+those of the flow-matching row, the U-Net rotation cell and DiT-L size seed 2. Each run is at
+`table2/<skill>/<variant>/seed_<n>/final.pt` with its `run_config.json` beside it:
 
 ```bash
-huggingface-cli download ASethi04/vgl-checkpoints --include "table2/rotation/baseline/*" --local-dir checkpoints
+huggingface-cli download ASethi04/vgl-checkpoints --include "table2/rotation/baseline_nz/*" --local-dir checkpoints
 ```
 
-To evaluate a downloaded checkpoint with the paper's protocol, point the evaluator at it:
+To evaluate a downloaded checkpoint with the paper's protocol, generate that skill's dataset first
+(see [Datasets](#datasets); the evaluator reads the query grid from its metadata), then point the
+evaluator at it:
 
 ```bash
-python -m paper_runs.table2.evaluate_table2 --skill rotation --variant baseline --seed 0 \
-  --checkpoint checkpoints/table2/rotation/baseline/seed_0/final.pt
+python -m paper_runs.table2.evaluate_table2 --skill rotation --variant baseline_nz --seed 0 \
+  --checkpoint checkpoints/table2/rotation/baseline_nz/seed_0/final.pt
 ```
 
 See [`CHECKPOINTS.md`](CHECKPOINTS.md) for the mapping from checkpoint to table row.
@@ -294,22 +327,34 @@ Every metric is rule-based, with no learned components, so scores are reproducib
 |---|---|---|
 | size | Otsu threshold → mask area → r = √(area/π) | IoU ≥ 0.90 vs ground truth |
 | position | centroid of the object mask | within 2 px |
-| rotation | multi-scale template matching on the arrow | within 5° |
-| count | distance transform + watershed, blobs > 30 px | exact match |
-| shape | contour-based classification | class match |
+| rotation | template matching on the arrow, coarse to fine over angle | within 5° |
+| count | Otsu mask (blank frames, with classes < 20 grey levels apart, count 0), distance transform + watershed, blobs > 30 px | exact match |
+| shape | template matching against shape renders (best fit over orientation) | class match |
 | color | nearest-neighbour in RGB | class match |
+
+The size, position, rotation and count rows are the single-skill (Table 2) metrics. Table 3 scores
+every sample with `paper_runs/table3/score_table3.py`, whose docstring gives its rules (count, for
+example, splits touching objects at necks). Appendix A.4 lists the results scored with the earlier
+size and count extractors; that code is `vgl/eval_radius.py` and `paper_runs/table2/evaluate_table2.py`
+at commit 47b7b4a.
 
 
 ---
 
+## License
+
+The code is released under CC BY-NC 4.0 ([LICENSE](LICENSE)), inherited from DiT; `vgl/diffusion/` keeps
+the MIT license of ADM ([vgl/diffusion/LICENSE](vgl/diffusion/LICENSE)). The checkpoints are released
+under CC BY-NC 4.0.
+
 ## Citation
 
 ```bibtex
-@article{sethi2026vgl,
-  title   = {Do Diffusion Models Learn to Generalize Basic Visual Skills?},
-  author  = {Sethi, Amish and Zeng, Boya and Chai, Wenhao and Liu, Zhuang},
-  journal = {arXiv preprint arXiv:XXXX.XXXXX},
-  year    = {2026}
+@inproceedings{sethi2026vgl,
+  title     = {Do Diffusion Models Learn to Generalize Basic Visual Skills?},
+  author    = {Sethi, Amish and Zeng, Boya and Chai, Wenhao and Liu, Zhuang},
+  booktitle = {Advances in Neural Information Processing Systems (NeurIPS)},
+  year      = {2026}
 }
 ```
 

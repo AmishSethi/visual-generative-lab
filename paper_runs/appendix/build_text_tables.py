@@ -91,7 +91,7 @@ def build(skill, out_path, device):
 
 def main():
     parser = argparse.ArgumentParser(description="Build CLIP text tables for VGL skills.")
-    parser.add_argument("--skills", nargs="+", default=["size", "count"])
+    parser.add_argument("--skills", nargs="+", default=["size", "rotation", "count"])
     parser.add_argument("--out-dir", type=Path,
                         default=Path(f"{VGL_ROOT}/appendix/text_tables"))
     args = parser.parse_args()

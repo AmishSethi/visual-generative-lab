@@ -239,15 +239,9 @@ def calculate_rotation_metrics(generated_img, expected_angle, shape_type='arrow'
             'detected_angle': 0.0
         }
     
-    # Calculate angle error (handling wrap-around)
-    angle_diff = detected_angle - expected_angle
-    
-    # Handle wrap-around
-    if angle_diff > 180:
-        angle_diff -= 360
-    elif angle_diff < -180:
-        angle_diff += 360
-    
+    # Angle error wrapped to [-180, 180)
+    angle_diff = (detected_angle - expected_angle + 180) % 360 - 180
+
     angle_error_abs = abs(angle_diff)
     
     return {

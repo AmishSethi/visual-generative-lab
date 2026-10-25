@@ -1,4 +1,4 @@
-# Environment used for every result in the paper.
+# Environment for the code in this repository.
 #   conda env create -f environment.yml && conda activate vgl
 name: vgl
 channels:

@@ -1,6 +1,6 @@
 # pip route. Install PyTorch first for your CUDA version:
 #   https://pytorch.org/get-started/locally/
-# Versions below are the ones used for every result in the paper.
+# Versions below are the ones this code was tested with.
 torch==2.5.1
 torchvision==0.20.1
 numpy==2.0.1

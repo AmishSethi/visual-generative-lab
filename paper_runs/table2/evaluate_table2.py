@@ -39,13 +39,16 @@ from vgl.eval_rotation import (
     load_model as load_rotation_model,
 )
 from vgl.flow_matching import FlowMatching
+from vgl.reproducibility_utils import git_state
 from paper_runs.table2.generate_canonical_datasets import render_circle
-from paper_runs.table2.manifest import DATASET_ROOT, EVAL_ROOT, RESULTS_ROOT, TABLE_ROWS
+from paper_runs.table2.manifest import CELL_OVERRIDES, DATASET_ROOT, EVAL_ROOT, RESULTS_ROOT, TABLE_ROWS
 
 
 SIZE_IOU_THRESHOLD = 0.90
 POSITION_ERROR_THRESHOLD = 2.0
 ROTATION_ERROR_THRESHOLD = 5.0
+# results.json also reports rotation accuracy at each of these (the appendix per-seed table uses 2).
+ROTATION_REPORT_THRESHOLDS = (2.0, 5.0)
 
 
 def calculate_rotation_metrics_robust(
@@ -64,12 +67,8 @@ def calculate_rotation_metrics_robust(
                 "detection_success": False, "expected_angle": expected_angle,
                 "detected_angle": 0.0}
 
-    # Wrap error to [-180, 180]
-    diff = float(detected) - expected_angle
-    if diff > 180:
-        diff -= 360
-    elif diff < -180:
-        diff += 360
+    # Wrap error to [-180, 180)
+    diff = (float(detected) - expected_angle + 180.0) % 360.0 - 180.0
 
     return {
         "angle_error": diff,
@@ -84,6 +83,11 @@ POSITION_EXTRAP_MARGIN = 6.0
 POSITION_EXTRAP_MIN_MARGIN = 4.0  # Table 2 protocol (L_inf >= 4 px outside training)
 COUNT_EXTRAP_VALUES = (0.0, 1.0, 8.0, 9.0)
 COUNT_MIN_AREA = 30
+# --count-zero choices, as recorded in results.json under protocol.count_zero.
+COUNT_ZERO_MODES = {
+    "numeric": "numeric (null_radius = -1 sentinel at inference)",
+    "null": "null token (null_radius unchanged)",
+}
 
 
 @dataclass(frozen=True)
@@ -261,6 +265,25 @@ def build_position_queries(
     return {"train": train_positions, "interp": interp, "extra": extrap}
 
 
+def select_conditions(queries: dict[str, list], conditions_file: Path | None) -> dict[str, list]:
+    """Keep only the conditions that conditions_file lists for a split (its '<split>_keys' entries,
+    written 'split|query'); splits it does not list stay whole."""
+    if conditions_file is None:
+        return queries
+    spec = load_json(conditions_file)
+    selected = {}
+    for split_name, values in queries.items():
+        keys = spec.get(f"{split_name}_keys")
+        if keys is None:
+            selected[split_name] = values
+            continue
+        wanted = {key.split("|", 1)[1] for key in keys}
+        selected[split_name] = [value for value in values if serialize_query(value) in wanted]
+        if len(selected[split_name]) != len(wanted):
+            raise ValueError(f"{conditions_file}: some {split_name} conditions are not in the query grid")
+    return selected
+
+
 def maybe_truncate_queries(queries: dict[str, list], max_conditions_per_split: int | None) -> dict[str, list]:
     if max_conditions_per_split is None:
         return queries
@@ -379,7 +402,7 @@ def build_rotation_config(selection: RunSelection, metadata: dict) -> dict:
 
 def create_sampler(config: dict, num_sampling_steps: int):
     if config.get("use_flow_matching", False):
-        return FlowMatching(sigma_min=0.0, sigma_data=1.0, use_sigmoid_time=True)
+        return FlowMatching(sigma_min=0.0, sigma_data=1.0, use_sigmoid_time=False)
     return create_diffusion(str(num_sampling_steps))
 
 
@@ -395,6 +418,14 @@ def gt_circle_image(radius: float, image_size: int) -> np.ndarray:
     return np.asarray(image)
 
 
+COUNT_MIN_CONTRAST = 20.0  # grey levels; GT blanks: Otsu class gap < 2, GT frames with objects: > 40
+COUNT_CORE_FRACTION = 0.6   # watershed marker = pixels deeper than this fraction of their blob's own maximum
+
+
+def frame_border(array: np.ndarray) -> np.ndarray:
+    return np.concatenate([array[0, :], array[-1, :], array[1:-1, 0], array[1:-1, -1]])
+
+
 def detect_count_with_watershed(image: np.ndarray, min_area: int = COUNT_MIN_AREA) -> int:
     if image.ndim == 3:
         gray = cv2.cvtColor(image, cv2.COLOR_RGB2GRAY)
@@ -402,8 +433,21 @@ def detect_count_with_watershed(image: np.ndarray, min_area: int = COUNT_MIN_ARE
         gray = image
 
     blurred = cv2.GaussianBlur(gray, (5, 5), 0)
-    _, binary = cv2.threshold(blurred, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
-    if np.mean(binary) > 127:
+    thresh, binary = cv2.threshold(blurred, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
+    # Count 0: Otsu always splits the frame in two, so a blank (noise-only) frame used to be
+    # cut into ~10 speckle "objects". Require an absolute contrast between the two classes.
+    dark, light = blurred[blurred <= thresh], blurred[blurred > thresh]
+    if not (dark.size and light.size) or float(light.mean()) - float(dark.mean()) < COUNT_MIN_CONTRAST:
+        return 0
+    # Polarity: the background is the class on the frame border, not the majority class
+    # (8-10 large circles can cover half the frame).
+    background_is_light = np.mean(frame_border(binary)) > 127
+    # Light objects: with dark and light circles in one frame, Otsu's threshold falls inside
+    # the light circles and keeps only their centres (< min_area). Threshold halfway between
+    # Otsu's threshold and the background mean instead.
+    background_mean = float(light.mean()) if background_is_light else float(dark.mean())
+    _, binary = cv2.threshold(blurred, (thresh + background_mean) / 2.0, 255, cv2.THRESH_BINARY)
+    if background_is_light:
         binary = 255 - binary
 
     kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (3, 3))
@@ -414,8 +458,12 @@ def detect_count_with_watershed(image: np.ndarray, min_area: int = COUNT_MIN_ARE
         return 0
 
     dist = cv2.distanceTransform(binary, cv2.DIST_L2, 5)
-    _, sure_fg = cv2.threshold(dist, 0.35 * dist.max(), 255, 0)
-    sure_fg = np.uint8(sure_fg)
+    # Touching objects: markers relative to each blob's own depth (was 0.35 of the global
+    # maximum, which merged near-touching radius-8 circles and could drop small blobs).
+    num_blobs, blob = cv2.connectedComponents(binary)
+    blob_max = np.zeros(num_blobs)
+    np.maximum.at(blob_max, blob.ravel(), dist.ravel())
+    sure_fg = np.uint8((dist > COUNT_CORE_FRACTION * blob_max[blob]) & (blob > 0)) * 255
     sure_bg = cv2.dilate(binary, kernel, iterations=2)
     unknown = cv2.subtract(sure_bg, sure_fg)
 
@@ -458,7 +506,7 @@ def evaluate_size_split(
             total += 1
             split_ious.append(float(metrics["iou"]))
             all_ious.append(float(metrics["iou"]))
-        condition_accuracies[Serialize_key := serialize_query(value)] = {
+        condition_accuracies[serialize_query(value)] = {
             "accuracy": 100.0 * split_successes / len(samples_dict[value]),
             "mean_iou": float(np.mean(split_ious)),
             "num_samples": len(samples_dict[value]),
@@ -494,7 +542,7 @@ def evaluate_count_split(
             total += 1
             split_abs_errors.append(float(abs_error))
             abs_errors.append(float(abs_error))
-        condition_accuracies[Serialize_key := serialize_query(value)] = {
+        condition_accuracies[serialize_query(value)] = {
             "accuracy": 100.0 * split_successes / len(samples_dict[value]),
             "mean_abs_count_error": float(np.mean(split_abs_errors)),
             "num_samples": len(samples_dict[value]),
@@ -517,6 +565,7 @@ def evaluate_rotation_split(
 ) -> dict:
     total = 0
     successes = 0
+    successes_at = {threshold: 0 for threshold in ROTATION_REPORT_THRESHOLDS}
     abs_errors = []
     detection_successes = 0
     condition_accuracies = {}
@@ -533,13 +582,15 @@ def evaluate_rotation_split(
             success = detected and metrics["angle_error_abs"] <= ROTATION_ERROR_THRESHOLD
             split_successes += int(success)
             successes += int(success)
+            for threshold in successes_at:
+                successes_at[threshold] += int(detected and metrics["angle_error_abs"] <= threshold)
             split_detection += int(detected)
             detection_successes += int(detected)
             total += 1
             if detected:
                 split_abs_errors.append(float(metrics["angle_error_abs"]))
                 abs_errors.append(float(metrics["angle_error_abs"]))
-        condition_accuracies[Serialize_key := serialize_query(value)] = {
+        condition_accuracies[serialize_query(value)] = {
             "accuracy": 100.0 * split_successes / len(samples_dict[value]),
             "detection_rate": 100.0 * split_detection / len(samples_dict[value]),
             "mean_abs_angle_error": float(np.mean(split_abs_errors)) if split_abs_errors else float("inf"),
@@ -553,6 +604,10 @@ def evaluate_rotation_split(
         "detection_rate": 100.0 * detection_successes / total if total else 0.0,
         "mean_abs_angle_error": float(np.mean(abs_errors)) if abs_errors else float("inf"),
         "threshold": ROTATION_ERROR_THRESHOLD,
+        "accuracy_at_threshold": {
+            f"{threshold:g}": 100.0 * hits / total if total else 0.0
+            for threshold, hits in successes_at.items()
+        },
         "condition_accuracies": condition_accuracies,
     }
 
@@ -590,7 +645,7 @@ def evaluate_position_split(
             if detected:
                 split_errors.append(float(metrics["position_error"]))
                 errors.append(float(metrics["position_error"]))
-        condition_accuracies[Serialize_key := serialize_query(value)] = {
+        condition_accuracies[serialize_query(value)] = {
             "accuracy": 100.0 * split_successes / len(samples_dict[value]),
             "detection_rate": 100.0 * split_detection / len(samples_dict[value]),
             "mean_position_error": float(np.mean(split_errors)) if split_errors else float("inf"),
@@ -640,12 +695,26 @@ def evaluate_size(args, selection: RunSelection, output_dir: Path) -> dict:
     return {"metadata": metadata, "splits": split_results}
 
 
+def query_count_zero_as_number(model: torch.nn.Module) -> None:
+    """Move the null value to -1 so that count 0 is embedded like every other count.
+
+    Counts are clamped to [0, 100] before the null test, so -1 never matches a query and every
+    other count is embedded exactly as before. Models without a null value (the U-Net) are unchanged.
+    """
+    for module in model.modules():
+        if hasattr(module, "null_radius"):
+            module.null_radius = -1.0
+
+
 def evaluate_count(args, selection: RunSelection, output_dir: Path) -> dict:
     metadata = load_dataset_metadata("count")
     queries = maybe_truncate_queries(build_count_queries(metadata), args.max_conditions_per_split)
     config = build_count_config(selection)
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     model = load_radius_model(config, device)
+    # Callers that pass their own args without count_zero (the appendix evaluators) keep the null token.
+    if getattr(args, "count_zero", "null") == "numeric":
+        query_count_zero_as_number(model)
     sampler = create_sampler(config, args.num_sampling_steps)
 
     split_results = {}
@@ -693,10 +762,13 @@ def evaluate_rotation(args, selection: RunSelection, output_dir: Path) -> dict:
 def evaluate_position(args, selection: RunSelection, output_dir: Path) -> dict:
     metadata = load_dataset_metadata("position")
     queries = maybe_truncate_queries(
-        build_position_queries(
-            metadata,
-            extrap_margin=args.position_extrap_margin,
-            extrap_min_margin=args.position_extrap_min_margin,
+        select_conditions(
+            build_position_queries(
+                metadata,
+                extrap_margin=args.position_extrap_margin,
+                extrap_min_margin=args.position_extrap_min_margin,
+            ),
+            getattr(args, "conditions_file", None),
         ),
         args.max_conditions_per_split,
     )
@@ -738,12 +810,20 @@ def default_output_root(num_samples_per_condition: int, num_sampling_steps: int)
 def main():
     parser = argparse.ArgumentParser(description="Paper-locked Table 2 evaluator.")
     parser.add_argument("--skill", required=True, choices=sorted(EVALUATORS.keys()))
-    parser.add_argument("--variant", required=True, help="Canonical variant name (baseline, sinusoidal, rotary, adaln, vae, flow, unet).")
+    parser.add_argument("--variant", required=True, help="Variant name: a key of manifest.VARIANTS, or baseline_nz for rotation.")
     parser.add_argument("--seed", required=True, type=int)
     parser.add_argument("--num-samples-per-condition", type=int, default=20)
     parser.add_argument("--num-sampling-steps", type=int, default=250)
     parser.add_argument("--eval-batch-size", type=int, default=8)
     parser.add_argument("--max-conditions-per-split", type=int, default=None)
+    parser.add_argument(
+        "--conditions-file",
+        type=Path,
+        default=None,
+        help="Position only: score just the conditions this JSON file lists for a split ('<split>_keys'); "
+             "other splits stay whole. paper_runs/table2/position_subsample_100.json is the fixed random "
+             "100-condition train and interp subset of Table 2's DiT-L and U-Net position rows.",
+    )
     parser.add_argument("--output-root", type=Path, default=None)
     parser.add_argument("--checkpoint", type=Path, default=None,
                         help="Evaluate this checkpoint (its run_config.json must sit beside it, as in the Hub layout) instead of the latest finished run under RESULTS_ROOT.")
@@ -771,6 +851,15 @@ def main():
         default=POSITION_EXTRAP_MIN_MARGIN,
         help="Inner margin (px) for position 'extra' split (min L-inf distance from training rectangle).",
     )
+    parser.add_argument(
+        "--count-zero",
+        choices=sorted(COUNT_ZERO_MODES),
+        default="numeric",
+        help="How count 0 is queried. 'numeric' (Table 2) moves the model's null value to -1 at inference, "
+             "so 0 is embedded like every other count. 'null' keeps the null value, so 0 is queried as the "
+             "null token (Figures 3, 9 and 11). Other counts, and the U-Net, which has no null value, "
+             "are unaffected.",
+    )
     args = parser.parse_args()
 
     output_root = args.output_root or default_output_root(args.num_samples_per_condition, args.num_sampling_steps)
@@ -782,7 +871,10 @@ def main():
         selection = RunSelection(run_dir=run_dir, checkpoint=args.checkpoint.resolve(), run_config=load_json(run_dir / "run_config.json"))
     else:
         selection = latest_finished_run(args.skill, args.variant, args.seed)
-    table_rows = [row for row, mapped_variant in TABLE_ROWS.items() if mapped_variant == args.variant]
+    table_rows = [
+        row for row, mapped_variant in TABLE_ROWS.items()
+        if CELL_OVERRIDES.get((args.skill, mapped_variant), (mapped_variant,))[0] == args.variant
+    ]
 
     result = {
         "skill": args.skill,
@@ -796,11 +888,14 @@ def main():
         "size_extrap_max": args.size_extrap_max,
         "position_extrap_margin": args.position_extrap_margin,
         "position_extrap_min_margin": args.position_extrap_min_margin,
+        "conditions_file": str(args.conditions_file) if args.conditions_file else None,
         "evaluated_at_utc": datetime.now(timezone.utc).isoformat(),
         "run_dir": str(selection.run_dir),
         "checkpoint": str(selection.checkpoint),
         "git_commit": selection.run_config.get("git_commit"),
+        "evaluator_git": git_state(),
         "run_config": selection.run_config,
+        "protocol": {"count_zero": COUNT_ZERO_MODES[args.count_zero] if args.skill == "count" else None},
         "paper_metrics": EVALUATORS[args.skill](args, selection, output_dir),
     }
 

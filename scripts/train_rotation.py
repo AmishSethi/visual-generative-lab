@@ -1,4 +1,10 @@
 #!/usr/bin/env python
+# Copyright (c) Meta Platforms, Inc. and affiliates.
+# All rights reserved.
+
+# This source code is licensed under the license found in the
+# LICENSE file in the root directory of this source tree.
+
 """
 A minimal training script for DiT using PyTorch DDP.
 Continuous rotation angle conditioning with checkpoint resuming and signal handling.
@@ -383,6 +389,8 @@ def main(args):
             opt.load_state_dict(checkpoint["opt"])
             train_steps = checkpoint.get("train_steps", 0)
             start_epoch = checkpoint.get("epoch", 0) + 1  # Start from next epoch
+            # A resumed run skips the rest of the interrupted epoch. The paper's runs resumed this
+            # way, so the behaviour is kept.
             
             logger.info(f"Resumed from epoch {start_epoch}, step {train_steps}")
         else:
@@ -636,7 +644,7 @@ if __name__ == "__main__":
     parser.add_argument("--rotation-text-table", type=str, default=None,
                         help="Precomputed CLIP text-embedding table; required for --rotation-embedding-type text")
     parser.add_argument("--rotation-embedding-type", type=str, 
-                        choices=["circular_sinusoidal", "sinusoidal", "linear", "rotary", "text"], 
+                        choices=["circular_sinusoidal", "sinusoidal", "linear", "rotary", "text", "sincos"], 
                         default="linear",
                         help="Type of rotation embedding to use") 
     parser.add_argument("--conditioning-method", type=str, choices=["adaln", "concat"], default="concat",

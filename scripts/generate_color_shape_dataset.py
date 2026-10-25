@@ -4,7 +4,8 @@ Generate color+shape composition datasets with configurable training coverage.
 
 This script creates datasets for studying compositional generalization between
 color and shape properties. It supports varying training coverage (25%, 50%, 75%)
-and different sample sizes (5k, 10k, 15k).
+and different sample sizes (5k, 10k, 15k); these are the fixed-budget datasets of
+Figure 4(b) and Figure 5.
 """
 
 import os

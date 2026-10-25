@@ -499,11 +499,14 @@ def main(args):
 
     resume_batch_offset = 0
     if train_steps > 0:
-        steps_per_epoch = len(loader)
-        start_epoch, resume_batch_offset = divmod(train_steps, steps_per_epoch)
+        # train_steps counts optimizer steps; each takes grad_accum_steps loader batches, and an
+        # epoch's leftover batches (fewer than grad_accum_steps) are dropped.
+        steps_per_epoch = len(loader) // grad_accum_steps
+        start_epoch, resume_step_offset = divmod(train_steps, steps_per_epoch)
+        resume_batch_offset = resume_step_offset * grad_accum_steps
         logger.info(
             f"Exact resume position: epoch {start_epoch}, "
-            f"batch offset {resume_batch_offset}/{steps_per_epoch}, step {train_steps}"
+            f"batch offset {resume_batch_offset}/{len(loader)}, step {train_steps}"
         )
 
     # Prepare models for training:
@@ -606,8 +609,14 @@ def main(args):
                 if accum_steps < grad_accum_steps:
                     continue
                 
-                opt.step()
-                torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=1.0)
+                if args.clip_grad_before_step:
+                    torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=1.0)
+                    opt.step()
+                else:
+                    # As the appendix count runs trained: the clip comes after the update, so it has
+                    # no effect.
+                    opt.step()
+                    torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=1.0)
                 opt.zero_grad()
                 accum_steps = 0
                 
@@ -681,13 +690,17 @@ if __name__ == "__main__":
     parser.add_argument("--global-batch-size", type=int, default=128)
     parser.add_argument("--micro-batch-size", type=int, default=None,
                         help="Optional per-device micro batch size used with gradient accumulation")
+    parser.add_argument("--clip-grad-before-step", action="store_true",
+                        help="Clip the global gradient norm to 1.0 before each optimizer step, as the Table 2 "
+                             "count runs did. Without it the clip runs after the step and has no effect, as in "
+                             "the appendix count runs.")
     parser.add_argument("--global-seed", type=int, default=0)
     parser.add_argument("--vae", type=str, choices=["ema", "mse"], default="ema")  # Choice doesn't affect training
     parser.add_argument("--num-workers", type=int, default=1)
     parser.add_argument("--log-every", type=int, default=100)
     parser.add_argument("--ckpt-every", type=int, default=2000)
     parser.add_argument("--resume-from", type=str, default=None, 
-                        help="Path to checkpoint to resume from, or 'latest' to find the latest checkpoint")
+                        help="Path to checkpoint to resume from")
     parser.add_argument("--selected-classes", type=float, nargs='+', default=None,
                         help="List of count classes to train on (e.g., 4 6 8 10 for even numbers, or omit for all classes)")
     parser.add_argument("--max-samples-per-class", type=int, default=None,

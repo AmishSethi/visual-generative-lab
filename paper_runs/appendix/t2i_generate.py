@@ -86,7 +86,7 @@ MODELS = {
         "supports_negative": True,
     },
     # An Apache-2.0 distillation of FLUX.1-schnell.  Both black-forest-labs
-    # FLUX.1 repos are gated behind an approval list, so this is how the FLUX
+    # FLUX.1 repos are gated (log in and accept the license), so this is how the FLUX
     # architecture enters the comparison without gated access.
     "shuttle3": {
         "repo": "shuttleai/shuttle-3-diffusion",
@@ -96,7 +96,8 @@ MODELS = {
         "guidance": 0.0,
         "supports_negative": False,
     },
-    # 2025 FLUX.1 dev lineage.  FLUX.1-dev itself is gated; this one is not.
+    # 2025 FLUX.1 dev lineage.  Gated like FLUX.1-dev: accept the FLUX.1 [dev] Non-Commercial
+    # License on its Hugging Face page and log in before running.
     "flux_krea": {
         "repo": "black-forest-labs/FLUX.1-Krea-dev",
         "pipeline": "FluxPipeline",

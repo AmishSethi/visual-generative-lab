@@ -157,7 +157,7 @@ class ImageFolderWithComposition(ImageFolder):
                     part_idx = 0
                     
                     # Parse radius (r6p0 -> 6.0, r7p6 -> 7.6)
-                    if part_idx < len(parts) and parts[part_idx].startswith('r'):
+                    if part_idx < len(parts) and parts[part_idx].startswith('r') and parts[part_idx][1:2].isdigit():
                         radius_str = parts[part_idx][1:]  # Remove 'r'
                         radius_str = radius_str.replace('p', '.')
                         properties['radius'] = float(radius_str)
@@ -487,6 +487,8 @@ def main(args):
                     start_epoch = train_steps // steps_per_epoch
                     logger.info(f"Extracted from filename: step {train_steps}, calculated epoch {start_epoch}")
             
+            # With the +1 above, a resumed run skips the rest of the interrupted epoch and the next
+            # one. The paper's runs resumed this way, so the behaviour is kept.
             start_epoch = start_epoch + 1
             logger.info(f"Resumed from epoch {start_epoch}, step {train_steps}")
         else:
@@ -619,6 +621,8 @@ def main(args):
                     opt.zero_grad()
                     continue
                 
+                # The clip comes after the update, so it has no effect. The paper's runs trained this
+                # way, so the order is kept.
                 opt.step()
                 torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=1.0)
                 
@@ -694,7 +698,8 @@ if __name__ == "__main__":
     # Property embedding settings
     parser.add_argument("--radius-embedding-type", type=str, choices=["sinusoidal", "linear"], default="linear")
     parser.add_argument("--position-embedding-type", type=str, choices=["sinusoidal", "linear"], default="linear")
-    parser.add_argument("--rotation-embedding-type", type=str, choices=["sinusoidal", "linear"], default="linear")
+    parser.add_argument("--rotation-embedding-type", type=str, choices=["sinusoidal", "linear"], default="linear",
+                        help="Not used: the compositional model always uses its default (sinusoidal) rotation embedding.")
 
     
     # Conditioning settings

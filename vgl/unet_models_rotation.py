@@ -43,7 +43,7 @@ class RotationEmbedder(nn.Module):
         self.embedding_type = embedding_type
         self.hidden_size = hidden_size
         
-        if embedding_type == 'circular':
+        if embedding_type in ('circular', 'sincos'):
             # Use sine and cosine to encode circular nature of rotation
             self.mlp = nn.Sequential(
                 nn.Linear(2, hidden_size, bias=True),
@@ -72,6 +72,10 @@ class RotationEmbedder(nn.Module):
         if self.embedding_type == 'circular':
             # Encode rotation using sine and cosine to preserve circular nature
             emb = torch.stack([torch.sin(rotation), torch.cos(rotation)], dim=-1)
+        elif self.embedding_type == 'sincos':
+            # Angle in degrees, as the DiT's 'linear' rotation embedder takes it: [sin, cos] of the angle
+            angles_rad = (rotation % 360.0) * (math.pi / 180.0)
+            emb = torch.stack([torch.sin(angles_rad), torch.cos(angles_rad)], dim=-1)
         elif self.embedding_type == 'sinusoidal':
             # Normalize rotation to [0, 1] for sinusoidal embedding
             rotation_normalized = rotation / (2 * math.pi)

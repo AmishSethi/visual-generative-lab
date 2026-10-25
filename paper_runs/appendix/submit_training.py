@@ -2,7 +2,7 @@
 """Submit appendix training jobs.
 
 Families:
-  scaling       size/position/count at 10k/20k/40k/80k images, compute held
+  scaling       all four skills at 10k/20k/40k/80k images, compute held
                 fixed at manifest.BASE_STEPS gradient steps.
   hires         all four skills at 128x128 with DiT-S/4, token-matched to the
                 paper's DiT-S/2 at 64x64.
@@ -16,6 +16,9 @@ Families:
   ranges        narrower or shifted training supports (manifest.RANGE_SPECS).
   realistic     visually complex renders of the same skill grids.
   text          frozen text-encoder (CLIP) conditioning instead of numeric.
+  count_random  the numeric comparator of the text-conditioned count run: the
+                baseline, 1000 epochs on the radius-8 random-layout count set
+                (seeds 0-8).
 """
 import argparse
 import shlex
@@ -131,25 +134,41 @@ def jobs_shapevocab(seed):
 def jobs_text(seed):
     """Frozen text-encoder conditioning instead of numeric.
 
-    Trains on the paper's own canonical datasets so the only thing that changes
-    is how the skill value reaches the model: a CLIP embedding of a sentence
-    describing it, the way a text-to-image system is conditioned, rather than
-    the scalar itself.
+    Size and rotation train on the Table 2 datasets and count on the radius-8
+    random-layout set (generate_datasets.py --family count_random), so the only
+    thing that changes against the numeric runs is how the skill value reaches
+    the model: a CLIP embedding of a sentence describing it, the way a
+    text-to-image system is conditioned, rather than the scalar itself.
     """
     from paper_runs.appendix.manifest import APPENDIX_ROOT, TABLE2_DATASETS
 
+    data = {"size": TABLE2_DATASETS / "size", "rotation": TABLE2_DATASETS / "rotation",
+            "count": DATASET_ROOT / "count_random"}
     out = []
-    for skill in ("size", "count"):
+    for skill in ("size", "rotation", "count"):
         table = APPENDIX_ROOT / "text_tables" / f"{skill}.pt"
-        data = TABLE2_DATASETS / skill
         results = RESULTS_ROOT / "text_cond" / skill / f"seed_{seed}"
-        cmd = common_args(skill, data, results, 1000, 64, "DiT-S/2", seed)
+        cmd = common_args(skill, data[skill], results, 1000, 64, "DiT-S/2", seed)
         # swap the embedding type set by common_args and point at the table
         flag = f"--{SKILLS[skill]['embedding_flag']}"
         cmd[cmd.index(flag) + 1] = "text"
-        cmd.extend(["--radius-text-table", str(table)])
-        out.append((f"rb-text-{skill}-s{seed}", cmd, 1, "32:00:00", "32G"))
+        cmd.extend(["--rotation-text-table" if skill == "rotation" else "--radius-text-table", str(table)])
+        num_gpus = 1
+        if skill == "rotation":
+            # The paper's rotation run used 4 GPUs and 8 loader workers.
+            num_gpus = 4
+            cmd[cmd.index("--num-workers") + 1] = "8"
+        out.append((f"rb-text-{skill}-s{seed}", cmd, num_gpus, "32:00:00", "32G"))
     return out
+
+
+def jobs_count_random(seed):
+    """The numeric baseline on the text-conditioned count run's data and schedule
+    (1000 epochs on the radius-8 random-layout set); Appendix D.4 averages seeds 0-8."""
+    data = DATASET_ROOT / "count_random"
+    results = RESULTS_ROOT / "count_random" / f"seed_{seed}"
+    cmd = common_args("count", data, results, 1000, 64, "DiT-S/2", seed)
+    return [(f"rb-countrandom-s{seed}", cmd, 1, "32:00:00", "32G")]
 
 
 def jobs_realistic(seed):
@@ -182,8 +201,8 @@ def jobs_budget5k(seed):
     """The shape x colour grid (S=4/8, C=8/16, coverage 25/50/75) at a
     5,000-image budget.
 
-    At a 15,000-image budget eleven of the twelve cells score exactly 100%, so
-    coverage cannot be separated from K -- the task is too easy.  Five thousand
+    At a 15,000-image budget eight of the twelve cells score 100% (Table 13), so
+    coverage is hard to separate from K.  Five thousand
     images keeps the grid below saturation, on the part of the curve where the
     paper's compositional results differ, and each run takes ~6h rather than
     ~19h.
@@ -302,6 +321,7 @@ FAMILIES = {
     "ranges": jobs_ranges,
     "realistic": jobs_realistic,
     "text": jobs_text,
+    "count_random": jobs_count_random,
     "maskvariance": jobs_maskvariance,
 }
 

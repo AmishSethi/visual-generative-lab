@@ -16,14 +16,21 @@ RESULTS_ROOT = ARTIFACT_ROOT / "results"
 SLURM_ROOT = ARTIFACT_ROOT / "slurm"
 LOG_ROOT = ARTIFACT_ROOT / "logs"
 EVAL_ROOT = ARTIFACT_ROOT / "eval"
-EVAL_SLURM_ROOT = ARTIFACT_ROOT / "eval_slurm"
-EVAL_LOG_ROOT = ARTIFACT_ROOT / "eval_logs"
-EVAL_ROOT = ARTIFACT_ROOT / "eval"
-EVAL_RESULTS_ROOT = EVAL_ROOT / "results"
 EVAL_SLURM_ROOT = EVAL_ROOT / "slurm"
 EVAL_LOG_ROOT = EVAL_ROOT / "logs"
 
 CANONICAL_SEEDS = (0, 1, 2)
+# Table 2 cells that read other runs than the row's variant: (skill, row variant) -> (variant, seeds).
+# The rotation baseline is baseline_nz over seeds 0-9 (submit_baseline_nz_extra_seeds.py; rotation/baseline,
+# 3 seeds, is the ablation-matched baseline), and the U-Net rotation cell is unet_sincos.
+CELL_OVERRIDES = {
+    ("rotation", "baseline"): ("baseline_nz", tuple(range(10))),
+    ("rotation", "unet"): ("unet_sincos", CANONICAL_SEEDS),
+}
+# Table 2 scores the DiT-L and U-Net position rows' train and interp splits on a fixed random
+# 100-condition subset (evaluate_table2.py --conditions-file); extrapolation is complete.
+POSITION_SUBSET_FILE = REPO_ROOT / "paper_runs" / "table2" / "position_subsample_100.json"
+POSITION_SUBSET_VARIANTS = ("dit_large", "unet")
 DATASET_SEED = 42
 EVAL_NUM_SAMPLES = 20
 EVAL_NUM_SAMPLING_STEPS = 250
@@ -38,9 +45,9 @@ TABLE_ROWS = {
     "+ concatenation": "baseline",
     "+ VAE latent": "vae",
     "+ pixel": "baseline",
-    "+ flow matching": "flow",
-    "+ U-Net (capacity-matched)": "unet",
-    "+ DiT-L (capacity scaling)": "dit_large",
+    "+ flow matching": "flow_tfix",
+    "+ U-Net (matched #params)": "unet",
+    "+ DiT-L (higher #params)": "dit_large",
 }
 
 VARIANTS = {
@@ -96,6 +103,17 @@ VARIANTS = {
         "conditioning": "concat",
         "latent": False,
         "flow_matching": True,
+        "flow_sigmoid_time": True,  # these runs drew training times t = sigmoid(u), u ~ U[0, 1]; Table 2 uses flow_tfix
+        "time_limit": "48:00:00",
+    },
+    # The flow-matching row retrained with t ~ U[0, 1], the default of vgl/flow_matching.py.
+    "flow_tfix": {
+        "architecture": "dit",
+        "model": "DiT-S/2",
+        "embedding": "linear",
+        "conditioning": "concat",
+        "latent": False,
+        "flow_matching": True,
         "time_limit": "48:00:00",
     },
     "unet": {
@@ -107,6 +125,18 @@ VARIANTS = {
         "flow_matching": False,
         "time_limit": "48:00:00",
         "num_gpus": 4,
+    },
+    # The U-Net rotation cell retrained with a periodic [sin, cos] angle input; rotation only.
+    "unet_sincos": {
+        "architecture": "unet",
+        "model": "UNet-DiT-S2-matched",
+        "embedding": "sincos",
+        "conditioning": "concat",
+        "latent": False,
+        "flow_matching": False,
+        "time_limit": "48:00:00",
+        "num_gpus": 4,
+        "skills": ("rotation",),
     },
     "dit_large": {
         "architecture": "dit",
@@ -153,6 +183,7 @@ SKILLS = {
         "null_args": ["--null-count", "0.0", "--null-embedding-type", "none"],
         "max_samples_flag": "max-samples-per-class",
         "epochs": 3000,            # count is still improving at the 1000 epochs the other skills use
+        "extra_args": ["--clip-grad-before-step"],  # the Table 2 count runs clip before the optimizer step
     },
 }
 
@@ -180,6 +211,8 @@ DATASET_SPECS = {
         "max_angle": 315,
         "step_degrees": 1,
         "shape_type": "arrow",
+        "arrow_color": (255, 100, 100),     # every arrow in this colour on white, with no noise
+        "background_color": (255, 255, 255),
         "seed": DATASET_SEED,
     },
     "count": {

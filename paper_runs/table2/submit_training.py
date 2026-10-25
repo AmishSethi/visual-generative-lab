@@ -75,6 +75,7 @@ MICRO_BATCH_OVERRIDES = {
     ("position", "unet"): 16,
     ("rotation", "unet"): 16,
     ("count", "unet"): 16,
+    ("rotation", "unet_sincos"): 16,
     ("size", "dit_large"): 16,
     ("position", "dit_large"): 16,
     ("rotation", "dit_large"): 16,
@@ -133,6 +134,7 @@ def build_command(skill, variant, seed):
         f"--{skill_spec['dropout_flag']}",
         "0.0",
         *skill_spec["null_args"],
+        *skill_spec.get("extra_args", []),
     ]
 
     micro_batch_size = MICRO_BATCH_OVERRIDES.get((skill, variant))
@@ -143,6 +145,8 @@ def build_command(skill, variant, seed):
         command.append("--use-latent-diffusion")
     if variant_spec["flow_matching"]:
         command.append("--use-flow-matching")
+        if variant_spec.get("flow_sigmoid_time"):
+            command.append("--flow-use-sigmoid-time")
 
     return command
 
@@ -179,6 +183,8 @@ def main():
     submitted = []
     for skill in args.skills:
         for variant in args.variants:
+            if skill not in VARIANTS[variant].get("skills", SKILLS):
+                continue
             for seed in args.seeds:
                 if has_completed_run(skill, variant, seed):
                     continue

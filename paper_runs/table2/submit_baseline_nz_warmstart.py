@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 """Warm-start rotation `baseline_nz` from seed 4's step-20k checkpoint.
 
-This is the diagnosis-implies-fix experiment from Appendix Section I:
+This is the diagnosis-implies-fix experiment of Appendix K:
     Hypothesis: rotation collapse is determined by step 20k of training.
     Prediction: warm-starting from a healthy seed's step-20k checkpoint with
     FRESH downstream training should reduce the 3/10 collapse rate toward 0/N.
@@ -16,10 +16,10 @@ For each new seed in {100..104}:
   2. Submit a 1-GPU SLURM job that runs scripts/train_rotation.py with
        --resume-from <staged_copy>  --global-seed {N}
      using the same baseline_nz config (linear emb / concat / null=zero).
-  3. Training continues to step 78000 (1000 epochs, same as fresh runs), so
-     58000 additional steps after the warm-start. The final checkpoint will be
-     written to .../checkpoints/final_0078000.pt -- compatible with the
-     existing eval pipeline (paper_runs/table2/evaluate_table2.py).
+  3. Training continues to the end of epoch 1000, as in fresh runs. The resume
+     starts at the next epoch, which skips the 46 remaining steps of epoch 256,
+     so the final checkpoint is .../checkpoints/final_0077954.pt (57954 steps
+     after the warm start), which paper_runs/table2/evaluate_table2.py picks up.
 
 scripts/train_rotation.py resume logic loads:
     - model state_dict

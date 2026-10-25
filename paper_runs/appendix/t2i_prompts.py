@@ -2,19 +2,19 @@
 
 Tests whether VGL's 64x64 synthetic setting is a proxy for real generative
 models: the *same* skill queries are posed to off-the-shelf text-to-image
-models and their outputs are scored with the *same* rule-based metrics.  A
-matching failure pattern supports using the synthetic setting as a proxy for
-those models.
+models and their outputs are scored with rule-based extractors adapted to these
+renders (t2i_score.py).  A matching failure pattern supports using the
+synthetic setting as a proxy for those models.
 
 Prompts deliberately request flat 2D shapes on plain white backgrounds so the
-VGL extractors (Otsu threshold -> mask -> geometry) apply unchanged.
+extractors in t2i_score.py can measure them.
 """
 
 # "red circle" pulls Stable Diffusion straight to bullseye/target imagery on
 # textured backgrounds, which breaks the geometry extractor before the skill is
 # ever tested.  "Solid filled dot", an explicit white-background anchor, and a
 # negative prompt that names the failure modes keep the render inside the
-# protocol the VGL extractors assume.
+# protocol the t2i_score.py extractors assume.
 STYLE = ("simple flat vector clipart of {subject}, solid uniform fill, no outline, "
          "isolated on a pure white background, no shadow, no gradient, no border, no text")
 

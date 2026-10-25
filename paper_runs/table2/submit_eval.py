@@ -27,6 +27,8 @@ from paper_runs.table2.manifest import (
     EVAL_LOG_ROOT,
     EVAL_ROOT,
     EVAL_SLURM_ROOT,
+    POSITION_SUBSET_FILE,
+    POSITION_SUBSET_VARIANTS,
     REPO_ROOT,
     RESULTS_ROOT,
     SKILLS,
@@ -123,8 +125,9 @@ def build_command(skill: str, variant: str, seed: int, args: argparse.Namespace)
         str(args.eval_batch_size),
         "--output-root",
         str(args.output_root),
-        "--size-extrap-max", "25", "--position-extrap-min-margin", "0.0",  # base query grid (Table 2 uses the extended grid)
     ]
+    if skill == "position" and variant in POSITION_SUBSET_VARIANTS:
+        command.extend(["--conditions-file", str(POSITION_SUBSET_FILE)])
     return command
 
 
@@ -176,6 +179,8 @@ def main():
     submitted = []
     for skill in args.skills:
         for variant in args.variants:
+            if skill not in VARIANTS[variant].get("skills", SKILLS):
+                continue
             for seed in args.seeds:
                 if has_completed_eval(skill, variant, seed, args.output_root):
                     continue

@@ -5,7 +5,7 @@ The paper's extractors assume a flat subject on a near-white ground and key off
 Otsu thresholding, which does not survive textured backgrounds and shaded
 objects.  Geometry here is recovered from the saturation mask instead -- objects
 are rendered saturated, backgrounds desaturated -- and every metric keeps the
-paper's own threshold so the numbers stay comparable to Table 1:
+paper's own threshold so the numbers stay comparable to Table 2:
 
     size      IoU >= 0.90 against the ground-truth disc
     position  centroid within 2 px
@@ -33,7 +33,7 @@ import paper_runs.table2.evaluate_table2 as t2
 from paper_runs.appendix import subsample
 from paper_runs.appendix.manifest import DATASET_ROOT, EVAL_ROOT, RESULTS_ROOT
 from paper_runs.appendix.realistic import (
-    circle_mask, object_mask, render_arrow, render_circle, render_circles,
+    SATURATION_KEY, circle_mask, object_mask, render_arrow, render_circle, render_circles,
 )
 from paper_runs.table2.generate_canonical_datasets import sample_non_overlapping_centers
 from vgl.eval_radius import generate_samples as generate_radius_samples, load_model as load_radius_model
@@ -44,6 +44,9 @@ SIZE_IOU_THRESHOLD = 0.90
 POSITION_ERROR_THRESHOLD = 2.0
 ROTATION_ERROR_THRESHOLD = 5.0
 MIN_BLOB_AREA = 30
+# Extrapolation grids: radii 1-4 and 21-25, positions from the training boundary.
+SIZE_EXTRAP_MIN, SIZE_EXTRAP_MAX = 1, 25
+POSITION_EXTRAP_MARGIN, POSITION_EXTRAP_MIN_MARGIN = 6.0, 0.0
 
 
 def disc_mask(radius, cx=0.0, cy=0.0, size=IMAGE_SIZE):
@@ -55,8 +58,19 @@ def disc_mask(radius, cx=0.0, cy=0.0, size=IMAGE_SIZE):
     return circle_mask(radius, cx, cy, size)
 
 
-def score_size(image, radius):
+def size_mask(image):
+    """object_mask, except when its opening leaves fewer than 20 px (radius 1 and 2 disks): then the largest
+    8-connected component of the unopened saturation mask, which drops the specks the opening removes."""
     mask = object_mask(image)
+    if mask.sum() >= 20:
+        return mask
+    raw = (cv2.cvtColor(image, cv2.COLOR_RGB2HSV)[..., 1] > SATURATION_KEY).astype(np.uint8)
+    n, labels, stats, _ = cv2.connectedComponentsWithStats(raw, connectivity=8)
+    return raw if n <= 1 else (labels == 1 + int(np.argmax(stats[1:, cv2.CC_STAT_AREA]))).astype(np.uint8)
+
+
+def score_size(image, radius):
+    mask = size_mask(image)
     gt = disc_mask(radius)
     union = np.logical_or(mask > 0, gt > 0).sum()
     iou = float(np.logical_and(mask > 0, gt > 0).sum() / union) if union else 0.0
@@ -117,7 +131,7 @@ def validate(n=60, seed=0):
     out = {}
 
     ious = [score_size(render_circle(r, 0, 0, IMAGE_SIZE, rng), r)["iou"]
-            for r in range(5, 21) for _ in range(n // 16 + 1)]
+            for r in range(SIZE_EXTRAP_MIN, SIZE_EXTRAP_MAX + 1) for _ in range(n // 16 + 1)]
     out["size_pct_iou_above_threshold"] = 100.0 * float(np.mean([i >= SIZE_IOU_THRESHOLD for i in ious]))
     out["size_mean_iou"] = float(np.mean(ious))
 
@@ -151,13 +165,14 @@ def evaluate(skill, seed, num_samples, steps, batch_size, max_conditions, device
     selection = t2.latest_finished_run(skill, "", seed)
 
     if skill == "size":
-        queries, config = t2.build_size_queries(metadata), t2.build_size_config(selection)
+        queries = t2.build_size_queries(metadata, SIZE_EXTRAP_MIN, SIZE_EXTRAP_MAX)
+        config = t2.build_size_config(selection)
         load, gen = load_radius_model, generate_radius_samples
     elif skill == "count":
         queries, config = t2.build_count_queries(metadata), t2.build_count_config(selection)
         load, gen = load_radius_model, generate_radius_samples
     elif skill == "position":
-        queries = t2.build_position_queries(metadata)
+        queries = t2.build_position_queries(metadata, POSITION_EXTRAP_MARGIN, POSITION_EXTRAP_MIN_MARGIN)
         config = t2.build_position_config(selection, metadata)
         from vgl.eval_position import (generate_samples as gen_pos, load_model as load_pos)
         load, gen = load_pos, gen_pos

@@ -24,7 +24,7 @@ def generate_shape_image(radius, position, shape, color_rgb, image_size=64,
     img = Image.new('RGB', (large_size, large_size), background_color)
     draw = ImageDraw.Draw(img)
     
-    # SPECIAL HANDLING: Use smaller fixed size when count is being tested
+    # Use a smaller fixed size when count is one of the skills
     if count_is_active_property:
         # Use a fixed smaller radius that allows 4 objects to fit comfortably
         effective_radius = min(radius * 0.5, 5.0)  # Cap at 5 pixels to ensure 4 fit
@@ -199,7 +199,7 @@ def generate_property_values_coverage(include_properties=None):
         property_values['count'] = [1, 2, 3, 4]
     
     if 'rotation' in include_properties:
-        property_values['rotation'] = [0, 45, 90, 135, 180, 225, 270, 315]
+        property_values['rotation'] = [0, 15, 30, 45, 135, 225, 315, 330, 345]
     
     return property_values, include_properties
 
@@ -246,9 +246,9 @@ def create_coverage_based_splits(property_values, include_properties, coverage=0
                 holdout_property_values[prop] = prop_values[-5:]
                 print(f"  {prop} (continuous): Training on {len(train_property_values[prop])} positions, holdout {len(holdout_property_values[prop])}")
             elif prop == 'rotation':
-                # Hold out diagonal angles
-                train_property_values[prop] = [0, 90, 180, 270]
-                holdout_property_values[prop] = [45, 135, 225, 315]
+                # Train inside the single-skill rotation domain (45-315 deg); hold out angles outside it
+                train_property_values[prop] = [45, 135, 225, 315]
+                holdout_property_values[prop] = [0, 15, 30, 330, 345]
                 print(f"  {prop} (continuous): Training on {train_property_values[prop]}, holdout {holdout_property_values[prop]}")
             elif prop == 'count':
                 # Hold out highest count for extrapolation
@@ -481,7 +481,7 @@ def generate_compositional_dataset_coverage(output_dir, coverage=0.75, image_siz
     
     os.makedirs(output_dir, exist_ok=True)
     
-    # STEP 1: Generate property values FIRST
+    # Step 1: generate the property values
     property_values, include_properties = generate_property_values_coverage(include_properties)
     
     print(f"Included properties: {include_properties}")
@@ -502,14 +502,14 @@ def generate_compositional_dataset_coverage(output_dir, coverage=0.75, image_siz
         elif prop == 'rotation':
             print(f"  Rotations: {values} degrees")
     
-    # STEP 3: Create coverage-based splits
+    # Step 2: create the coverage-based splits
     splits = create_coverage_based_splits(property_values, include_properties, coverage)
     
     total_train_samples = len(splits['train']) * samples_per_combination
     print(f"Training combinations: {len(splits['train'])}")
     print(f"Training samples: {total_train_samples}")
     
-    # STEP 4: Generate datasets for each split
+    # Step 3: generate the images of each split
     for split_name, combinations in splits.items():
         if split_name != '_metadata' and len(combinations) > 0:
             # Use fewer samples for test splits to speed up generation
@@ -518,7 +518,7 @@ def generate_compositional_dataset_coverage(output_dir, coverage=0.75, image_siz
             generate_dataset_split(combinations, include_properties, output_dir, split_name, 
                                  split_samples_per_combo, image_size)
     
-    # STEP 5: Save metadata
+    # Step 4: save the metadata
     metadata = {
         'composition_type': 'coverage_based',
         'coverage': coverage,

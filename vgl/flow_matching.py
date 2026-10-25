@@ -26,7 +26,7 @@ class FlowMatching:
     def __init__(self, 
                  sigma_min: float = 0.0,
                  sigma_data: float = 1.0,
-                 use_sigmoid_time: bool = True):
+                 use_sigmoid_time: bool = False):
         """
         Initialize flow matching.
         
@@ -261,7 +261,7 @@ class FlowMatching:
 
 def create_flow_matching(sigma_min: float = 0.0,
                         sigma_data: float = 1.0,
-                        use_sigmoid_time: bool = True) -> FlowMatching:
+                        use_sigmoid_time: bool = False) -> FlowMatching:
     """
     Create a FlowMatching instance with specified parameters.
     
@@ -345,7 +345,7 @@ def create_loss_function(args, **kwargs):
         flow_matching = create_flow_matching(
             sigma_min=getattr(args, 'flow_sigma_min', 0.0),
             sigma_data=getattr(args, 'flow_sigma_data', 1.0),
-            use_sigmoid_time=getattr(args, 'flow_use_sigmoid_time', True)
+            use_sigmoid_time=getattr(args, 'flow_use_sigmoid_time', False)
         )
         return FlowMatchingLosses(flow_matching)
     else:
@@ -363,7 +363,7 @@ def add_flow_matching_args(parser):
                        help="Minimum noise level for flow matching")
     parser.add_argument("--flow-sigma-data", type=float, default=1.0,
                        help="Data scaling factor for flow matching")
-    parser.add_argument("--flow-use-sigmoid-time", action="store_true", default=True,
+    parser.add_argument("--flow-use-sigmoid-time", action="store_true", default=False,
                        help="Apply sigmoid to time samples in flow matching")
     parser.add_argument("--flow-num-steps", type=int, default=50,
                        help="Number of steps for flow matching sampling")

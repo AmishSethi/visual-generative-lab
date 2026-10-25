@@ -9,11 +9,15 @@
              the break points would not be comparable.
 
   text_cond  frozen text-encoder embeddings of the skill value in place of
-             numeric conditioning, trained on the paper's canonical datasets,
-             so only the conditioning differs.
+             numeric conditioning, trained on the Table 2 size and rotation
+             datasets and the radius-8 random-layout count set, so only the
+             conditioning differs.
 
-Both use evaluate_table2's own evaluators, so numbers land on the same scale as
-the paper's Table 1.
+  count_random  the numeric comparator of the text-conditioned count run
+             (submit_training.py --families count_random).
+
+All use evaluate_table2's own evaluators, so numbers land on the same scale as
+the paper's Table 2.
 """
 import argparse
 import json
@@ -71,8 +75,8 @@ def run_one(skill, path_key, dataset_dir, results_root, seed, eval_args, out_dir
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Evaluate ranges / text_cond families.")
-    parser.add_argument("--family", required=True, choices=["ranges", "text_cond"])
+    parser = argparse.ArgumentParser(description="Evaluate ranges / text_cond / count_random families.")
+    parser.add_argument("--family", required=True, choices=["ranges", "text_cond", "count_random"])
     parser.add_argument("--seed", type=int, default=0)
     parser.add_argument("--num-samples", type=int, default=20)
     parser.add_argument("--steps", type=int, default=250)
@@ -94,8 +98,10 @@ def main():
     if args.family == "ranges":
         jobs = [(name, spec["skill"], DATASET_ROOT / "ranges" / name,
                  RESULTS_ROOT / "ranges", name) for name, spec in RANGE_SPECS.items()]
+    elif args.family == "count_random":
+        jobs = [("count", "count", DATASET_ROOT / "count_random", RESULTS_ROOT, "count_random")]
     else:
-        jobs = [(skill, skill, TABLE2_DATASETS / skill,
+        jobs = [(skill, skill, DATASET_ROOT / "count_random" if skill == "count" else TABLE2_DATASETS / skill,
                  RESULTS_ROOT / "text_cond", skill)
                 for skill in ("size", "count", "rotation")]
 

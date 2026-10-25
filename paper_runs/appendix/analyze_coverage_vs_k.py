@@ -15,7 +15,8 @@ and the same coverage fraction appears at different K.  Two analyses:
                      sharing coverage, compared across K.  No modelling.
   regression         accuracy ~ coverage + log2(K), reporting each term's
                      partial contribution, so the two hypotheses are weighed
-                     on the same twelve points.
+                     on the same twelve points; also log2(k) alone, with
+                     k = K/S the training combinations per shape.
 
 The total image budget is identical in every cell, so samples-per-combination
 falls as K rises -- exactly the tradeoff the paper's Finding 2 is about.
@@ -134,10 +135,11 @@ def matched_contrasts(cells):
 
 
 def regression(cells, metric=METRIC):
-    """OLS of accuracy on coverage and log2(K), with per-term partial R^2."""
+    """OLS of accuracy on coverage and log2(K), with per-term partial R^2, and on log2(K/S) alone."""
     y = np.array([c[metric.replace("_accuracy", "")] for c in cells], dtype=float)
     coverage = np.array([c["coverage"] for c in cells], dtype=float)
     logk = np.array([math.log2(c["K"]) for c in cells], dtype=float)
+    log_k_per_shape = np.array([math.log2(c["K"] / c["S"]) for c in cells], dtype=float)
 
     def fit(columns):
         X = np.column_stack([np.ones(len(y))] + columns)
@@ -150,6 +152,7 @@ def regression(cells, metric=METRIC):
     beta_full, r2_full = fit([coverage, logk])
     _, r2_cov_only = fit([coverage])
     _, r2_k_only = fit([logk])
+    _, r2_k_per_shape_only = fit([log_k_per_shape])
 
     print(f"\n--- regression on {len(cells)} cells, target = B-split {metric} ---")
     print(f"  accuracy = {beta_full[0]:.1f} + {beta_full[1]:.1f}*coverage "
@@ -157,11 +160,13 @@ def regression(cells, metric=METRIC):
     print(f"  R^2 full model            : {r2_full:.3f}")
     print(f"  R^2 coverage alone        : {r2_cov_only:.3f}")
     print(f"  R^2 log2(K) alone         : {r2_k_only:.3f}")
+    print(f"  R^2 log2(K/S) alone       : {r2_k_per_shape_only:.3f}")
     print(f"  unique to coverage        : {r2_full - r2_k_only:.3f}")
     print(f"  unique to log2(K)         : {r2_full - r2_cov_only:.3f}")
     return {
         "intercept": beta_full[0], "beta_coverage": beta_full[1], "beta_log2K": beta_full[2],
         "r2_full": r2_full, "r2_coverage_only": r2_cov_only, "r2_logK_only": r2_k_only,
+        "r2_log_k_per_shape_only": r2_k_per_shape_only,
         "unique_to_coverage": r2_full - r2_k_only, "unique_to_logK": r2_full - r2_cov_only,
         "n_cells": len(cells),
     }
