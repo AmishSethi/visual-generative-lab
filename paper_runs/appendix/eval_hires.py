@@ -57,6 +57,8 @@ class EvalArgs:
         # Positions from the training boundary, as the 128x128 table was scored.
         self.position_extrap_margin = 6.0 * RES_SCALE
         self.position_extrap_min_margin = 0.0
+        # Count 0 is queried as a number, as in Table 2.
+        self.count_zero = "numeric"
 
 
 def main():
