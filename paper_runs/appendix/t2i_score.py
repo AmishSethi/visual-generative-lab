@@ -110,17 +110,63 @@ def blobs(mask, min_area):
     return out
 
 
+FRAME_MARGIN = 2           # px; a blob this close to the image edge touches the frame
+HOLLOW_FILL_RATIO = 1.3    # filled outline / blob area above which a blob is a ring or frame
+
+
+def _touches_frame(component):
+    m = FRAME_MARGIN
+    return bool(component[:m].any() or component[-m:].any()
+                or component[:, :m].any() or component[:, -m:].any())
+
+
+def _is_hollow(component):
+    contours, _ = cv2.findContours(component.astype(np.uint8), cv2.RETR_EXTERNAL,
+                                   cv2.CHAIN_APPROX_NONE)
+    filled = np.zeros(component.shape, np.uint8)
+    cv2.drawContours(filled, contours, -1, 1, -1)
+    return filled.sum() > HOLLOW_FILL_RATIO * component.sum()
+
+
+def main_blob(img_rgb):
+    """The measured object: the largest red blob clear of the frame and not hollow.
+
+    Models often wrap the requested dot or arrow in a red vignette, frame,
+    border or corner gradient, and the largest red blob is then the decoration.
+    Those decorations touch the image edge or enclose a hole, so the largest
+    blob that does neither is the object.  If no blob qualifies, the largest
+    blob is used, so a dot that fills the frame is still measured.
+    """
+    mask = foreground_mask(img_rgb)
+    h, w = mask.shape
+    found = sorted(blobs(mask, MIN_BLOB_AREA_FRAC * h * w), key=lambda b: -b["area"])
+    if not found:
+        return None
+    for b in found:
+        component = b["labels"] == b["label"]
+        if not _touches_frame(component) and not _is_hollow(component):
+            return b
+    return found[0]
+
+
 # --------------------------------------------------------------------------
 # per-skill scorers
 # --------------------------------------------------------------------------
+COUNT_MARKER_FRAC = 0.6    # watershed markers: above this fraction of each blob's own distance maximum
+COUNT_SPECK_FRAC = 0.2     # regions below this fraction of the median region area are fragments
+
+
 def score_count(img_rgb):
     """Count distinct objects, splitting ones that touch.
 
     Connected components alone merge touching objects, so a model that
     correctly draws two adjacent spheres would score 1, charging the model for
     the metric's failure.  A distance-transform watershed separates convex blobs
-    that touch, and the area-ratio rule then catches anything watershed still
-    leaves merged.
+    that touch.  Markers are taken per blob, relative to that blob's own
+    distance maximum, so a small dot next to a large one still gets a marker,
+    and the regions are counted one each: dividing areas by the median area
+    counts a dot with 1.5x the median area as two.  Regions under a fifth of
+    the median area are highlight or shadow fragments and are not counted.
     """
     mask = foreground_mask(img_rgb)
     h, w = mask.shape
@@ -132,8 +178,10 @@ def score_count(img_rgb):
     dist = cv2.distanceTransform(scaled, cv2.DIST_L2, 5)
     if dist.max() <= 0:
         return 0
-    _, sure_fg = cv2.threshold(dist, 0.45 * dist.max(), 255, 0)
-    sure_fg = np.uint8(sure_fg)
+    n_blobs, blob = cv2.connectedComponents(scaled)
+    blob_max = np.zeros(n_blobs)
+    np.maximum.at(blob_max, blob.ravel(), dist.ravel())
+    sure_fg = np.uint8((dist > COUNT_MARKER_FRAC * blob_max[blob]) & (blob > 0)) * 255
     kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (3, 3))
     unknown = cv2.subtract(cv2.dilate(scaled, kernel, iterations=2), sure_fg)
     n_markers, markers = cv2.connectedComponents(sure_fg)
@@ -143,69 +191,119 @@ def score_count(img_rgb):
     markers[unknown == 255] = 0
     cv2.watershed(cv2.cvtColor(scaled, cv2.COLOR_GRAY2BGR), markers)
 
-    areas = np.array([int(np.count_nonzero(markers == label))
-                      for label in np.unique(markers) if label > 1], dtype=np.float64)
-    areas = areas[areas >= min_area]
+    _, areas = np.unique(markers[markers > 1], return_counts=True)
+    areas = areas[areas >= min_area].astype(np.float64)
     if len(areas) == 0:
         return 0
-    unit = np.median(areas)
-    if unit <= 0:
-        return len(areas)
-    return int(sum(max(1, int(round(a / unit))) for a in areas))
+    areas = areas[areas >= COUNT_SPECK_FRAC * np.median(areas)]
+    return int(len(areas))
 
 
 def score_position(img_rgb):
-    mask = foreground_mask(img_rgb)
-    h, w = mask.shape
-    found = blobs(mask, MIN_BLOB_AREA_FRAC * h * w)
-    if not found:
+    blob = main_blob(img_rgb)
+    if blob is None:
         return None
-    biggest = max(found, key=lambda b: b["area"])
-    cx, cy = biggest["centroid"]
+    h, w = blob["labels"].shape
+    cx, cy = blob["centroid"]
     return (min(2, int(cx / (w / 3))), min(2, int(cy / (h / 3))))
 
 
 def score_size(img_rgb):
     """Diameter of the main blob as a fraction of image width."""
-    mask = foreground_mask(img_rgb)
-    h, w = mask.shape
-    found = blobs(mask, MIN_BLOB_AREA_FRAC * h * w)
-    if not found:
+    blob = main_blob(img_rgb)
+    if blob is None:
         return None
-    biggest = max(found, key=lambda b: b["area"])
-    diameter = 2.0 * np.sqrt(biggest["area"] / np.pi)
+    w = blob["labels"].shape[1]
+    diameter = 2.0 * np.sqrt(blob["area"] / np.pi)
     return float(diameter / w)
 
 
+ROTATION_SYM_MARGIN = 0.08  # a mirror axis must beat the principal axis by this much
+ROTATION_TRIM = 0.005       # fraction of pixels ignored at each end of the axis (stubs, specks)
+ROTATION_END = 0.04         # depth of an end slice, as a fraction of the arrow length
+ROTATION_BINS = 40
+
+
+def _mirror_score(component, points, centre, direction):
+    """Fraction of pixels whose reflection across the line (centre, direction) is also in the blob."""
+    normal = np.array([-direction[1], direction[0]])
+    mirrored = points - 2.0 * ((points - centre) @ normal)[:, None] * normal[None, :]
+    xi = np.round(mirrored[:, 0]).astype(int)
+    yi = np.round(mirrored[:, 1]).astype(int)
+    h, w = component.shape
+    inside = (xi >= 0) & (xi < w) & (yi >= 0) & (yi < h)
+    hit = np.zeros(len(points), bool)
+    hit[inside] = component[yi[inside], xi[inside]]
+    return float(hit.mean())
+
+
 def score_rotation(img_rgb):
-    """Arrow direction in VGL convention (0 deg = right, counter-clockwise)."""
-    mask = foreground_mask(img_rgb)
-    h, w = mask.shape
-    found = blobs(mask, MIN_BLOB_AREA_FRAC * h * w)
-    if not found:
-        return None
-    biggest = max(found, key=lambda b: b["area"])
-    component = (biggest["labels"] == biggest["label"]).astype(np.uint8)
+    """Arrow direction in VGL convention (0 deg = right, counter-clockwise).
 
+    Line of action: an arrow is mirror-symmetric about its direction.  That is
+    usually the principal axis, but for short wide shapes (chevrons, heads wider
+    than the arrow is long) it is the cross axis, so the best mirror axis over
+    5-degree steps replaces the principal axis when it is clearly more symmetric.
+
+    Sign: the head is the end that comes to a point.  When one end is a flat cut
+    (the tail of a block arrow, the back of a triangle or chevron) at least 0.3x
+    the arrow's width, and the other end is at most half as wide, the narrow end
+    is the tip.  This holds for heads of any length, where comparing the spread
+    of the two axial quartiles flips long or fat heads.  Otherwise (thin shafts,
+    where both ends are narrow) the quartile with the larger spread is the head,
+    as for VGL's own arrows.
+    """
+    blob = main_blob(img_rgb)
+    if blob is None:
+        return None
+    component = blob["labels"] == blob["label"]
     ys, xs = np.nonzero(component)
-    points = np.stack([xs, ys], axis=1).astype(np.float64)
-    centred = points - points.mean(axis=0)
-    if len(centred) < 20:
+    if len(xs) < 20:
         return None
+    step = max(1, len(xs) // 40000)
+    points = np.stack([xs, ys], axis=1).astype(np.float64)[::step]
+    centre = points.mean(axis=0)
+    centred = points - centre
 
-    # Principal axis gives the arrow's line of action but not its sign: both
-    # ends of a VGL arrow are equidistant from the centroid, so a
-    # farthest-point rule locks onto the tail exactly half the time.  The head
-    # is the wider end (the barbs), so compare mean perpendicular spread in the
-    # top and bottom quartile of the axial coordinate.
-    axis = np.linalg.svd(centred, full_matrices=False)[2][0]
+    principal = np.linalg.svd(centred, full_matrices=False)[2][0]
+    axis = principal
+    candidates = [np.array([np.cos(t), np.sin(t)]) for t in np.radians(np.arange(0, 180, 5))]
+    scores = [_mirror_score(component, points, centre, d) for d in candidates]
+    best = int(np.argmax(scores))
+    if scores[best] > _mirror_score(component, points, centre, principal) + ROTATION_SYM_MARGIN:
+        axis = candidates[best]
+
     axial = centred @ axis
-    perpendicular = np.abs(centred @ np.array([-axis[1], axis[0]]))
+    keep = (axial >= np.quantile(axial, ROTATION_TRIM)) & (axial <= np.quantile(axial, 1 - ROTATION_TRIM))
+    centred = centred[keep]
+    axial = centred @ axis
+    across = centred @ np.array([-axis[1], axis[0]])
+    lo, hi = axial.min(), axial.max()
+    length = max(hi - lo, 1e-6)
 
+    def extent(sel):
+        return across[sel].max() - across[sel].min() + 1 if sel.any() else 0.0
+
+    bins = np.clip(((axial - lo) / length * ROTATION_BINS).astype(int), 0, ROTATION_BINS - 1)
+    width = max(extent(bins == b) for b in range(ROTATION_BINS))
+
+    perpendicular = np.abs(across)
     head_side = axial >= np.quantile(axial, 0.75)
     tail_side = axial <= np.quantile(axial, 0.25)
-    direction = axis if perpendicular[head_side].mean() > perpendicular[tail_side].mean() else -axis
+    sign = 1.0 if perpendicular[head_side].mean() > perpendicular[tail_side].mean() else -1.0
 
+    d = ROTATION_END * length
+    end_hi, end_lo = extent(axial >= hi - d), extent(axial <= lo + d)
+    wide, narrow = max(end_hi, end_lo), min(end_hi, end_lo)
+    if end_hi >= end_lo:
+        inner = extent((axial >= hi - 3 * d) & (axial <= hi - 2 * d))
+    else:
+        inner = extent((axial <= lo + 3 * d) & (axial >= lo + 2 * d))
+    # the wide end must be a cut (as wide at 4% depth as 0.6x its width at 8-12%), not a wide-angle apex
+    if wide >= 0.3 * width and narrow <= 0.5 * wide and wide >= 0.6 * inner:
+        sign = 1.0 if end_hi < end_lo else -1.0
+
+    direction = sign * axis
     # image y grows downward, so flip it to get standard counter-clockwise angles
     return float(np.degrees(np.arctan2(-direction[1], direction[0])) % 360.0)
 
