@@ -59,7 +59,7 @@ Thresholds are listed under [Evaluation metrics](#evaluation-metrics).
     <tr>
       <td><strong>DiT-S/2 (baseline)</strong></td>
       <td>100.0</td><td>51.5</td>
-      <td>100.0</td><td>31.0</td>
+      <td>100.0</td><td>29.7</td>
       <td>100.0</td><td>68.0</td>
       <td>100.0</td><td>52.5</td>
     </tr>
@@ -74,41 +74,41 @@ Thresholds are listed under [Evaluation metrics](#evaluation-metrics).
       <td>+ rotary emb.</td>
       <td>100.0</td><td>9.9</td>
       <td>100.0</td><td>0.0</td>
-      <td>100.0</td><td>37.6</td>
+      <td>100.0</td><td>38.1</td>
       <td>100.0</td><td>36.3</td>
     </tr>
     <tr>
       <td>+ AdaLN</td>
       <td>100.0</td><td>31.0</td>
-      <td>100.0</td><td>63.6</td>
+      <td>100.0</td><td>61.5</td>
       <td>100.0</td><td>58.5</td>
       <td>100.0</td><td>72.5</td>
     </tr>
     <tr>
       <td>+ VAE latent</td>
-      <td>82.8</td><td>5.6</td>
-      <td>99.8</td><td>0.1</td>
+      <td>99.1</td><td>7.1</td>
+      <td>100.0</td><td>0.0</td>
       <td>100.0</td><td>21.2</td>
-      <td>71.7</td><td>43.8</td>
+      <td>93.3</td><td>48.8</td>
     </tr>
     <tr>
       <td>+ flow matching</td>
       <td>100.0</td><td>47.3</td>
-      <td>100.0</td><td>26.6</td>
+      <td>100.0</td><td>27.8</td>
       <td>100.0</td><td>51.0</td>
       <td>100.0</td><td>24.2</td>
     </tr>
     <tr>
       <td>+ U-Net (matched #params)</td>
       <td>100.0</td><td>21.2</td>
-      <td>100.0</td><td>39.9</td>
+      <td>100.0</td><td>42.7</td>
       <td>100.0</td><td>11.2</td>
       <td>99.7</td><td>79.6</td>
     </tr>
     <tr>
       <td>+ DiT-L (higher #params)</td>
       <td>100.0</td><td>44.5</td>
-      <td>100.0</td><td>34.7</td>
+      <td>100.0</td><td>42.5</td>
       <td>100.0</td><td>62.0</td>
       <td>100.0</td><td>72.1</td>
     </tr>
