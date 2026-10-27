@@ -28,8 +28,8 @@ def score_sample(image, gt, radius):
 
 def main():
     ap = argparse.ArgumentParser(description=__doc__.split("\n")[0])
-    ap.add_argument("--samples", type=Path, default=EVAL_ROOT / "cfg" / "samples")
-    ap.add_argument("--out", type=Path, default=EVAL_ROOT / "cfg" / "scores")
+    ap.add_argument("--samples", type=Path, default=EVAL_ROOT / "cfg" / "samples", help="cfg_sample.py --out")
+    ap.add_argument("--out", type=Path, default=EVAL_ROOT / "cfg" / "scores", help="directory for scale_<s>.json")
     args = ap.parse_args()
 
     args.out.mkdir(parents=True, exist_ok=True)

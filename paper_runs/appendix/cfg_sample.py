@@ -56,11 +56,10 @@ def main():
     ap.add_argument("--results-dir", type=Path, default=RESULTS_ROOT / "cfg" / "size" / "seed_0",
                     help="train.py --results-dir of the model; its newest finished run is sampled")
     ap.add_argument("--checkpoint", type=Path, default=None,
-                    help="sample this checkpoint instead (its run_config.json must sit beside it)")
-    ap.add_argument("--out", type=Path, default=EVAL_ROOT / "cfg" / "samples")
+                    help="sample this checkpoint of a train.py run (<run>/checkpoints/<name>.pt) instead")
+    ap.add_argument("--out", type=Path, default=EVAL_ROOT / "cfg" / "samples",
+                    help="directory for scale_<s>/ (default $VGL_ROOT/appendix/eval/cfg/samples)")
     ap.add_argument("--scales", nargs="+", type=float, default=list(SCALES), choices=SCALES)
-    ap.add_argument("--radii", nargs="+", type=float, default=None,
-                    help="only these radii (default: every interpolation and extrapolation radius)")
     ap.add_argument("--num-samples", type=int, default=20)
     ap.add_argument("--num-sampling-steps", type=int, default=250)
     ap.add_argument("--batch-size", type=int, default=20)
@@ -68,7 +67,8 @@ def main():
 
     if args.checkpoint:
         ckpt = args.checkpoint.resolve()
-        selection = RunSelection(run_dir=ckpt.parent, checkpoint=ckpt, run_config=load_json(ckpt.parent / "run_config.json"))
+        run_dir = ckpt.parents[1]  # train.py writes <run>/run_config.json and <run>/checkpoints/<name>.pt
+        selection = RunSelection(run_dir=run_dir, checkpoint=ckpt, run_config=load_json(run_dir / "run_config.json"))
     else:
         selection = newest_finished_run(args.results_dir)
     config = build_size_config(selection)
@@ -91,7 +91,7 @@ def main():
         out.mkdir(parents=True, exist_ok=True)
         for k, (split, value) in enumerate(conditions):
             stem = out / f"c{k:05d}"
-            if (args.radii and value not in args.radii) or stem.with_suffix(".json").exists():
+            if stem.with_suffix(".json").exists():
                 continue
             seed = SEED_BASE + 1000 * SCALES.index(scale) + k
             torch.manual_seed(seed)  # per-step noise inside p_sample comes from the global RNG

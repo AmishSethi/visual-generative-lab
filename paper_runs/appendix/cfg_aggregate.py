@@ -25,8 +25,8 @@ def accuracy(ious):
 
 def main():
     ap = argparse.ArgumentParser(description=__doc__.split("\n")[0])
-    ap.add_argument("--scores", type=Path, default=EVAL_ROOT / "cfg" / "scores")
-    ap.add_argument("--out", type=Path, default=EVAL_ROOT / "cfg" / "results.json")
+    ap.add_argument("--scores", type=Path, default=EVAL_ROOT / "cfg" / "scores", help="cfg_score.py --out")
+    ap.add_argument("--out", type=Path, default=EVAL_ROOT / "cfg" / "results.json", help="output JSON path")
     args = ap.parse_args()
 
     files = sorted(args.scores.glob("scale_*.json"), key=lambda p: float(p.stem.split("_", 1)[1]))

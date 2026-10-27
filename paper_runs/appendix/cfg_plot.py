@@ -1,13 +1,11 @@
 #!/usr/bin/env python
 """Figure 6: size accuracy on the Table 2 interpolation and extrapolation radii against the guidance scale.
 
-Reads the scores of cfg_score.py, checks them against results.json of cfg_aggregate.py, and writes
-cfg_scale_size_ablation.pdf and .png, with the plotted numbers in fig6_data.json. Text is set in Arial
+Reads results.json of cfg_aggregate.py and writes cfg_scale_size_ablation.pdf and .png. Text is set in Arial
 when the Arial font files are in --font-dir, and in matplotlib's default sans-serif otherwise.
 """
 import argparse
 import json
-import statistics as st
 import sys
 from pathlib import Path
 
@@ -22,8 +20,6 @@ if __package__ in (None, ""):
 from paper_runs.appendix.manifest import EVAL_ROOT
 
 SCALES = [1, 2, 4, 10, 15, 20, 50, 100]
-INTERP = [r + 0.5 for r in range(5, 20)]                     # Table 2 midpoints
-EXTRA = [1, 2, 3, 4] + list(range(21, 31))                   # Table 2 extrapolation radii
 ARIAL = ("arial.ttf", "arialbd.ttf", "ariali.ttf", "arialbi.ttf")
 
 PAGE_W, PAGE_H = 476.84875, 287.7325       # pt
@@ -35,41 +31,18 @@ LEG_PT = 7.0 / SCALE                        # native size that prints at 7 pt
 
 def main():
     ap = argparse.ArgumentParser(description=__doc__.split("\n")[0])
-    ap.add_argument("--scores", type=Path, default=EVAL_ROOT / "cfg" / "scores")
-    ap.add_argument("--results", type=Path, default=EVAL_ROOT / "cfg" / "results.json")
-    ap.add_argument("--out", type=Path, default=EVAL_ROOT / "cfg")
-    ap.add_argument("--font-dir", type=Path, default=Path.home() / ".fonts")
+    ap.add_argument("--results", type=Path, default=EVAL_ROOT / "cfg" / "results.json", help="cfg_aggregate.py --out")
+    ap.add_argument("--out", type=Path, default=EVAL_ROOT / "cfg", help="directory for the PDF and PNG")
+    ap.add_argument("--font-dir", type=Path, default=Path.home() / ".fonts",
+                    help="directory holding arial*.ttf; matplotlib's default sans-serif is used when they are absent")
     args = ap.parse_args()
     out = args.out
     out.mkdir(parents=True, exist_ok=True)
 
     # ---- data
     ref = json.loads(args.results.read_text())["scales"]
-    rows = []
-    for s in SCALES:
-        d = json.loads((args.scores / f"scale_{s}.json").read_text())
-        by = {(c["split"], float(c["value"])): c["per_sample"] for c in d["conditions"]}
-        res = {}
-        for split, radii in (("interp", INTERP), ("extra", EXTRA)):
-            ious = []
-            per_r = {}
-            for r in radii:
-                ps = by[(split, float(r))]
-                assert len(ps) == 20, (s, split, r, len(ps))
-                v = [x["iou"] for x in ps]
-                ious += v
-                per_r[f"{r:g}"] = 100.0 * sum(i >= 0.90 for i in v) / len(v)
-            res[split] = {"acc": 100.0 * sum(i >= 0.90 for i in ious) / len(ious), "mean_iou": st.mean(ious),
-                          "n": len(ious), "per_radius_acc": per_r}
-        rf = ref[str(s)]
-        for split in ("interp", "extra"):
-            assert abs(res[split]["acc"] - rf[split]["accuracy"]) < 1e-9, (s, split)
-            assert abs(res[split]["mean_iou"] - rf[split]["mean_iou"]) < 1e-9, (s, split)
-        for r, a in res["extra"]["per_radius_acc"].items():
-            assert abs(a - rf["extra_accuracy_per_radius"][r]) < 1e-9, (s, r)
-        rows.append({"cfg_scale": s, **res})
-    interp_acc = [r["interp"]["acc"] for r in rows]
-    extra_acc = [r["extra"]["acc"] for r in rows]
+    interp_acc = [ref[str(s)]["interp"]["accuracy"] for s in SCALES]
+    extra_acc = [ref[str(s)]["extra"]["accuracy"] for s in SCALES]
 
     # ---- plot
     faces = [args.font_dir / f for f in ARIAL if (args.font_dir / f).exists()]
@@ -117,18 +90,11 @@ def main():
     assert lb.y0 > atb.y1, "legend overlaps the axes or its tick labels"
     fig.savefig(out / "cfg_scale_size_ablation.pdf")
     fig.savefig(out / "cfg_scale_size_ablation.png", dpi=150)
-    json.dump({"source": str(args.scores / "scale_*.json"),
-               "model": "Table 2 size baseline config (DiT-S/2, Table 2 size dataset, batch 128, 1000 epochs) with "
-                        "--radius-dropout-prob 0.1, --null-embedding-type none, --null-radius 0.0, seed 0; final_0078000.pt, EMA",
-               "evaluator": "size extractor (Table 2)",
-               "metric": "accuracy % (IoU >= 0.90); mean_iou also given", "samples_per_condition": 20,
-               "interp_radii": INTERP, "extra_radii": EXTRA, "rows": rows},
-              open(out / "fig6_data.json", "w"), indent=1)
-    for row in rows:
-        pr = row["extra"]["per_radius_acc"]
+    for s in SCALES:
+        i, e = ref[str(s)]["interp"], ref[str(s)]["extra"]
         print("scale %5g  interp acc %5.1f IoU %.3f | extra acc %5.1f IoU %.3f | radii >= 50%%: %s" % (
-            row["cfg_scale"], row["interp"]["acc"], row["interp"]["mean_iou"], row["extra"]["acc"], row["extra"]["mean_iou"],
-            [k for k, v in pr.items() if v >= 50]))
+            s, i["accuracy"], i["mean_iou"], e["accuracy"], e["mean_iou"],
+            [k for k, v in ref[str(s)]["extra_accuracy_per_radius"].items() if v >= 50]))
     print("wrote", out)
 
 
