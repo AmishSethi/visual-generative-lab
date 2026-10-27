@@ -69,7 +69,7 @@ def extract_circle_mask(image, threshold_method='otsu'):
     mask = cv2.morphologyEx(mask, cv2.MORPH_CLOSE, kernel)
     # Radius 1-2: the 3x3 opening erases a radius-1 disk (about 2x2 px) and turns a
     # radius-2 disk into a 3x3 square or nothing, depending on anti-aliasing; skip it for
-    # masks smaller than SMALL_MASK_PX (radius < ~2.5). Larger masks are cleaned as before.
+    # masks smaller than SMALL_MASK_PX (radius < ~2.5).
     if mask.sum() >= SMALL_MASK_PX:
         mask = cv2.morphologyEx(mask, cv2.MORPH_OPEN, kernel)
     
@@ -387,7 +387,7 @@ def generate_samples(
                 else:
                     # Diffusion sampling. The predicted clean image is clipped to [-1, 1] in pixel
                     # space only: scaled VAE latents often exceed 1, so latent models are not
-                    # clipped (as in DiT's sample.py and eval_rotation.py).
+                    # clipped (as in DiT's sample.py).
                     if use_cfg and has_forward_with_cfg:
                         # Use the model's forward_with_cfg method
                         # Create doubled radius tensor: [conditional, unconditional]

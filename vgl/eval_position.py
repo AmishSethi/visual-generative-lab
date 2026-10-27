@@ -181,11 +181,6 @@ def load_model(config, device):
                    ckpt_path_lower.endswith('_vae') or 
                    '/vae_' in ckpt_path_lower or
                    '/vae/' in ckpt_path_lower) and 'novae' not in ckpt_path_lower and 'no_vae' not in ckpt_path_lower)
-    # The run config records this explicitly and is authoritative; the path
-    # heuristic below is only a fallback for older checkpoints whose run_config
-    # predates the flag.
-    if config.get('use_latent_diffusion'):
-        is_vae_model = True
 
     if is_vae_model:
         config['use_latent_diffusion'] = True
@@ -211,9 +206,6 @@ def load_model(config, device):
     else:
         # For non-VAE models, keep standard settings
         config['use_latent_diffusion'] = False
-    
-    model_key = config.get('model_name', config.get('model_type', 'DiT-S/2'))
-    print(f"DEBUG load_model: model_key={model_key}, model_name={config.get('model_name')}, model_type={config.get('model_type')}")
     
     if architecture == 'unet':
         model = UNet_models[config['model_type']](
@@ -362,7 +354,7 @@ def generate_samples(
                 else:
                     # Diffusion sampling. The predicted clean image is clipped to [-1, 1] in pixel
                     # space only: scaled VAE latents often exceed 1, so latent models are not
-                    # clipped (as in DiT's sample.py and eval_rotation.py).
+                    # clipped (as in DiT's sample.py).
                     sample = diffusion.p_sample_loop(
                         model,
                         z_shape,
