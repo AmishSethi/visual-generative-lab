@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-"""Evaluation splits of the Appendix G three- and four-skill models, built from their training grid.
+"""Evaluation splits of the Appendix F three- and four-skill models, built from their training grid.
 
 The grid is the one scripts/generate_compositional_dataset_coverage.py draws at 75% coverage for radius,
 position, shape (three-skill) and radius, position, shape, color (four-skill): radii 6-14 in training and
@@ -15,7 +15,7 @@ in full for the three-skill model, and for the four-skill model a seeded sample 
 combinations per (radius, shape). Writes <out-dir>/3skill.json and <out-dir>/4skill.json for
 `sample_spec.py --splits`; score the samples with paper_runs/table3/score_spec.py.
 
-    python -m paper_runs.appendix.appendix_g_splits --out-dir $VGL_ROOT/appendix/appendix_g
+    python -m paper_runs.appendix.multi_skill_splits --out-dir $VGL_ROOT/appendix/multi_skill
 """
 import argparse
 import itertools

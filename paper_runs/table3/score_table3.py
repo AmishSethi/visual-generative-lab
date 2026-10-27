@@ -28,9 +28,9 @@ Detection and the object
   position  Euclidean distance <= 2 px between the centre of mass of the object and the centre of
             mass of the ground-truth render of the requested position (requested shape and size; for
             the rotated object, at the detected angle, because the arrow's centroid is not its rotation
-            centre). The Appendix A.4 / single-skill rule (centroid minus the canvas centre (32, 32))
-            is returned as position_ok_a4; it carries a renderer offset of 0.5-0.6 px for the four
-            shapes and up to 1.35 px for the arrow.
+            centre). The Appendix A.4 / single-skill rule (centroid minus the canvas centre (31.5, 31.5),
+            as in vgl/eval_position.py) is returned as position_ok_a4; it carries a renderer offset of
+            up to about 0.5 px for the four shapes and about 1 px for the arrow.
   rotation  the sample is translated so the object's centroid sits at a fixed point and correlated with
             a 1-degree bank of templates drawn by the dataset renderer (template centroids at the same
             point); circular error <= 5 deg (the threshold of Appendix A.4). The error is taken modulo
@@ -564,7 +564,7 @@ def score_sample(img: np.ndarray, cond: dict, ctx: dict, shape_method: str | Non
 
     if "position" in props:
         cy, cx = ndimage.center_of_mass(whole.astype(np.float32))
-        dx, dy = cx - IMAGE_SIZE / 2.0, cy - IMAGE_SIZE / 2.0
+        dx, dy = cx - (IMAGE_SIZE - 1) / 2.0, cy - (IMAGE_SIZE - 1) / 2.0
         rec["position_det"] = (float(dx), float(dy))
         rec["position_err_a4"] = float(math.hypot(dx - cond["position"][0], dy - cond["position"][1]))
         rec["position_ok_a4"] = rec["position_err_a4"] <= POSITION_THRESHOLD_PX

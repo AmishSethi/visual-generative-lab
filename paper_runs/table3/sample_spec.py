@@ -3,7 +3,7 @@
 
 Used for the fixed-budget color + shape models of Figures 4(b) and 5 (--dataset: the held-out
 combinations of a scripts/generate_color_shape_dataset.py dataset) and for the three- and four-skill
-models of Appendix G (--splits: a file written by paper_runs.appendix.appendix_g_splits).
+models of Appendix F (--splits: a file written by paper_runs.appendix.multi_skill_splits).
 EMA weights by default, loaded key-for-key; 20 samples per combination; 250 DDPM steps, no guidance;
 seeded noise. Writes
 
@@ -12,10 +12,12 @@ seeded noise. Writes
   <out>/manifest.json  checkpoint, sha256, weights, settings
 
 A split whose .npz and .json already exist is skipped, so a rerun after a timeout resumes at the next split.
+
+    python -m paper_runs.table3.sample_spec --checkpoint <run>/checkpoints/final_<step>.pt --dataset <dir> --out <dir>
+    python -m paper_runs.table3.sample_spec --checkpoint <run>/checkpoints/final_<step>.pt --splits 3skill.json --out <dir>
 """
 import argparse
 import hashlib
-import io
 import json
 import os
 import sys
@@ -29,9 +31,8 @@ if __package__ in (None, ""):
     sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
 from vgl.diffusion import create_diffusion
-from vgl.models_compositional import DiT_models_compositional
 from paper_runs.table3.manifest import REPO_ROOT
-from paper_runs.table3.sample_table3 import build_kwargs, git_state, to_uint8
+from paper_runs.table3.sample_table3 import build_kwargs, git_state, load_model_checked, to_uint8
 
 SHAPES = ("circle", "square", "triangle", "diamond")
 COLORS = ("red", "blue", "green", "yellow", "magenta", "cyan", "orange", "purple")
@@ -44,31 +45,17 @@ def color_shape_spec(dataset_dir):
     return {"properties": ["color", "shape"], "splits": {"test_composition": combos}}
 
 
-def load_model(ckpt_path, properties, weights, model_name, device):
-    model = DiT_models_compositional[model_name](input_size=64, in_channels=3, conditioning_method="concat",
-                                                 property_dropout_prob=0.0, active_properties=properties)
-    raw = Path(ckpt_path).read_bytes()
-    sha = hashlib.sha256(raw).hexdigest()
-    ckpt = torch.load(io.BytesIO(raw), map_location="cpu", weights_only=False)
-    del raw
-    if weights not in ckpt:
-        raise SystemExit(f"no '{weights}' weights in {ckpt_path}; keys={list(ckpt)}")
-    model.load_state_dict(ckpt[weights], strict=True)
-    return model.to(device).eval(), sha, ckpt.get("train_steps")
-
-
 def main():
     ap = argparse.ArgumentParser(description=__doc__.split("\n")[0])
-    ap.add_argument("--checkpoint", type=Path, required=True)
+    ap.add_argument("--checkpoint", type=Path, required=True, help="compositional checkpoint (.pt)")
     src = ap.add_mutually_exclusive_group(required=True)
     src.add_argument("--dataset", type=Path, help="color + shape dataset: sample its held-out combinations")
     src.add_argument("--splits", type=Path, help="JSON {properties, splits: {name: [combination, ...]}}")
-    ap.add_argument("--out", type=Path, required=True)
+    ap.add_argument("--out", type=Path, required=True, help="dir for <split>.npz, <split>.json and manifest.json")
     ap.add_argument("--weights", choices=("ema", "model"), default="ema")
-    ap.add_argument("--model", default="DiT-S/2")
     ap.add_argument("--num-samples", type=int, default=20)
     ap.add_argument("--num-sampling-steps", type=int, default=250)
-    ap.add_argument("--batch-size", type=int, default=256)
+    ap.add_argument("--batch-size", type=int, default=256, help="samples per forward pass; each batch has its own seed")
     ap.add_argument("--sampling-seed", type=int, default=0, help="offset mixed into every batch seed")
     args = ap.parse_args()
 
@@ -78,7 +65,8 @@ def main():
     torch.backends.cudnn.benchmark = False
     torch.backends.cudnn.deterministic = True
     t0 = time.time()
-    model, sha, train_steps = load_model(args.checkpoint, props, args.weights, args.model, device)
+    model, sha, report = load_model_checked(args.checkpoint, props, device, weights=args.weights)
+    train_steps = report["train_steps"]
     print(f"{args.checkpoint} [{args.weights}] strict load ok, sha256 {sha}, step {train_steps}", flush=True)
     diffusion = create_diffusion(str(args.num_sampling_steps))
     args.out.mkdir(parents=True, exist_ok=True)
@@ -118,7 +106,7 @@ def main():
         "weights": f"checkpoint['{args.weights}']", "properties": props,
         "source": str(args.dataset or args.splits),
         "splits": {s: len(v) for s, v in spec["splits"].items()},
-        "settings": {"model": f"{args.model} concat", "num_samples_per_combination": n,
+        "settings": {"model": "DiT-S/2 concat", "num_samples_per_combination": n,
                      "diffusion": f"create_diffusion('{args.num_sampling_steps}')",
                      "sampler": "p_sample_loop, clip_denoised=True, no guidance",
                      "batch_size": args.batch_size, "sampling_seed": args.sampling_seed,

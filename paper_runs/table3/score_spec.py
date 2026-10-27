@@ -4,7 +4,7 @@
 Every sample is scored on its own against the values it was conditioned on (score_table3.score_sample);
 accuracy is the fraction of samples. For each split the output has the summary (detection rate, the
 accuracy of each skill, joint accuracy) and the same accuracies for every combination (the cells of
-Figure 5).
+Figure 5). The splits are those of manifest.json, which sample_spec.py writes once every split is saved.
 
     python -m paper_runs.table3.score_spec --samples <sample_spec.py --out dir> --out scores.json
 """
@@ -23,10 +23,8 @@ from paper_runs.table3 import score_table3 as st
 
 def score_dir(sample_dir: Path) -> dict:
     result = {"samples": str(sample_dir), "splits": {}}
-    for meta_path in sorted(sample_dir.glob("*.json")):
-        if meta_path.name == "manifest.json":
-            continue
-        meta = json.load(open(meta_path))
+    for split in json.load(open(sample_dir / "manifest.json"))["splits"]:
+        meta = json.load(open(sample_dir / f"{split}.json"))
         props = meta["properties"]
         ctx = st.context(props)
         images = np.load(sample_dir / f"{meta['split']}.npz")["images"]
@@ -47,7 +45,7 @@ def score_dir(sample_dir: Path) -> dict:
 
 def main():
     ap = argparse.ArgumentParser(description=__doc__.split("\n")[0])
-    ap.add_argument("--samples", type=Path, required=True, help="dir with <split>.npz and <split>.json")
+    ap.add_argument("--samples", type=Path, required=True, help="sample_spec.py --out dir (manifest.json, <split>.npz, <split>.json)")
     ap.add_argument("--out", type=Path, required=True, help="output JSON path")
     args = ap.parse_args()
     res = score_dir(args.samples)
