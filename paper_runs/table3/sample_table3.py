@@ -103,7 +103,7 @@ def to_uint8(samples):
     return (x.cpu().numpy() * 255).astype(np.uint8)
 
 
-def load_model_checked(ckpt_path, properties, device):
+def load_model_checked(ckpt_path, properties, device, weights="model"):
     """_load_compositional_model, but the load must match the checkpoint key-for-key."""
     from vgl.models_compositional import DiT_models_compositional as DiT_models
     model = DiT_models["DiT-S/2"](input_size=64, in_channels=3, conditioning_method="concat",
@@ -112,9 +112,9 @@ def load_model_checked(ckpt_path, properties, device):
     sha = hashlib.sha256(raw).hexdigest()
     ckpt = torch.load(io.BytesIO(raw), map_location="cpu", weights_only=False)
     del raw
-    if "model" not in ckpt:
-        raise SystemExit(f"FATAL: no 'model' (non-EMA) weights in {ckpt_path}; keys={list(ckpt)}")
-    missing, unexpected = model.load_state_dict(ckpt["model"], strict=False)
+    if weights not in ckpt:
+        raise SystemExit(f"FATAL: no '{weights}' weights in {ckpt_path}; keys={list(ckpt)}")
+    missing, unexpected = model.load_state_dict(ckpt[weights], strict=False)
     if missing or unexpected:
         raise SystemExit(f"FATAL load mismatch for {ckpt_path}: missing={missing} unexpected={unexpected}")
     return model.to(device).eval(), sha, {"missing": list(missing), "unexpected": list(unexpected),

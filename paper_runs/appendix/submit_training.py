@@ -19,6 +19,8 @@ Families:
   count_random  the numeric comparator of the text-conditioned count run: the
                 baseline, 1000 epochs on the radius-8 random-layout count set
                 (seeds 0-8).
+  cfg           the Table 2 size baseline with conditioning dropout 0.1, for the
+                classifier-free guidance sweep of Appendix A.5 (Figure 6).
 """
 import argparse
 import shlex
@@ -169,6 +171,19 @@ def jobs_count_random(seed):
     results = RESULTS_ROOT / "count_random" / f"seed_{seed}"
     cmd = common_args("count", data, results, 1000, 64, "DiT-S/2", seed)
     return [(f"rb-countrandom-s{seed}", cmd, 1, "32:00:00", "32G")]
+
+
+def jobs_cfg(seed):
+    """The Table 2 size baseline (paper_runs/table2/submit_training.py, same data, schedule and
+    checkpoint interval) with conditioning dropout 0.1, so it can be sampled with classifier-free
+    guidance; a dropped radius is the zero token (null radius 0). Figure 6 uses seed 0."""
+    from paper_runs.appendix.manifest import TABLE2_DATASETS
+
+    results = RESULTS_ROOT / "cfg" / "size" / f"seed_{seed}"
+    cmd = common_args("size", TABLE2_DATASETS / "size", results, 1000, 64, "DiT-S/2", seed)
+    cmd[cmd.index("--ckpt-every") + 1] = "2000"
+    cmd[cmd.index("--radius-dropout-prob") + 1] = "0.1"
+    return [(f"rb-cfg-size-s{seed}", cmd, 1, "32:00:00", "32G")]
 
 
 def jobs_realistic(seed):
@@ -322,6 +337,7 @@ FAMILIES = {
     "realistic": jobs_realistic,
     "text": jobs_text,
     "count_random": jobs_count_random,
+    "cfg": jobs_cfg,
     "maskvariance": jobs_maskvariance,
 }
 

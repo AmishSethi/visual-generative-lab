@@ -29,8 +29,8 @@ three splits:
    nearly perfectly, and only rotation continues to work far outside it.
 2. **Coverage beats dataset size.** At a fixed image budget, spreading samples across more unique
    skill combinations beats concentrating them on fewer.
-3. **Skills are learned jointly.** An out-of-range request in one skill can degrade the others, even
-   when those remain in range.
+3. **Skills do not always fail independently.** An out-of-range request in one skill can degrade
+   the others, even when those remain in range.
 
 ---
 
@@ -59,7 +59,7 @@ Thresholds are listed under [Evaluation metrics](#evaluation-metrics).
     <tr>
       <td><strong>DiT-S/2 (baseline)</strong></td>
       <td>100.0</td><td>51.5</td>
-      <td>100.0</td><td>31.0</td>
+      <td>100.0</td><td>29.7</td>
       <td>100.0</td><td>68.0</td>
       <td>100.0</td><td>52.5</td>
     </tr>
@@ -74,41 +74,41 @@ Thresholds are listed under [Evaluation metrics](#evaluation-metrics).
       <td>+ rotary emb.</td>
       <td>100.0</td><td>9.9</td>
       <td>100.0</td><td>0.0</td>
-      <td>100.0</td><td>37.6</td>
+      <td>100.0</td><td>38.1</td>
       <td>100.0</td><td>36.3</td>
     </tr>
     <tr>
       <td>+ AdaLN</td>
       <td>100.0</td><td>31.0</td>
-      <td>100.0</td><td>63.6</td>
+      <td>100.0</td><td>61.5</td>
       <td>100.0</td><td>58.5</td>
       <td>100.0</td><td>72.5</td>
     </tr>
     <tr>
       <td>+ VAE latent</td>
-      <td>82.8</td><td>5.6</td>
-      <td>99.8</td><td>0.1</td>
+      <td>99.1</td><td>7.1</td>
+      <td>100.0</td><td>0.0</td>
       <td>100.0</td><td>21.2</td>
-      <td>71.7</td><td>43.8</td>
+      <td>93.3</td><td>48.8</td>
     </tr>
     <tr>
       <td>+ flow matching</td>
       <td>100.0</td><td>47.3</td>
-      <td>100.0</td><td>26.6</td>
+      <td>100.0</td><td>27.8</td>
       <td>100.0</td><td>51.0</td>
       <td>100.0</td><td>24.2</td>
     </tr>
     <tr>
       <td>+ U-Net (matched #params)</td>
       <td>100.0</td><td>21.2</td>
-      <td>100.0</td><td>39.9</td>
+      <td>100.0</td><td>42.7</td>
       <td>100.0</td><td>11.2</td>
       <td>99.7</td><td>79.6</td>
     </tr>
     <tr>
       <td>+ DiT-L (higher #params)</td>
       <td>100.0</td><td>44.5</td>
-      <td>100.0</td><td>34.7</td>
+      <td>100.0</td><td>42.5</td>
       <td>100.0</td><td>62.0</td>
       <td>100.0</td><td>72.1</td>
     </tr>
@@ -116,8 +116,8 @@ Thresholds are listed under [Evaluation metrics](#evaluation-metrics).
 </table>
 
 The baseline reaches ~100% on every skill's training support, and only rotation extrapolates well
-beyond it. Scaling to DiT-L (~306M parameters, 14× the baseline) improves count extrapolation but
-not size or rotation.
+beyond it. Scaling to DiT-L (~306M parameters, 14× the baseline) improves count and position
+extrapolation but not size or rotation.
 
 Reproduce this table with [`paper_runs/table2/`](paper_runs/table2) — see
 [Reproducing paper results](#reproducing-paper-results).
@@ -210,17 +210,17 @@ vgl/                       importable library
   eval_radius.py           size sampler + rule-based metric
   eval_position.py         position sampler + metric
   eval_rotation.py         rotation sampler + metric
-  eval_compositional.py    multi-skill test sets (and the earlier Table 3 scorer's metrics)
+  eval_compositional.py    multi-skill test sets (and the metrics of `paper_runs/table3/evaluate_table3.py`)
   reproducibility_utils.py seeding, worker init, run-config logging
 
-scripts/                   training entry points (one per skill) and the two-skill dataset generators
+scripts/                   training entry points (one per skill) and the compositional dataset generators
 
-paper_runs/              code behind the paper's tables (the paper's checklist lists what is not included)
+paper_runs/              code behind the paper's tables
   table2/                single-skill generalization (Table 2)
-  table3/                compositional generalization (Table 3)
+  table3/                compositional generalization (Table 3, Figures 4(b) and 5)
   appendix/              experiments behind the appendix: data scaling, resolution, token-matched
                          latent vs pixel, visually complex renders, text conditioning, the
-                         text-to-image probe, and coverage vs K
+                         text-to-image probe, coverage vs K, and the three- and four-skill splits
 ```
 
 ---
@@ -245,6 +245,14 @@ python -m paper_runs.table2.evaluate_table2 --skill position --variant dit_large
   --conditions-file paper_runs/table2/position_subsample_100.json
 python -m paper_runs.table2.aggregate_table2
 
+# Figure 6 (Appendix A.5): the size baseline trained with conditioning dropout 0.1 (seed 0),
+# sampled at guidance scales 1-100 on the Table 2 interpolation and extrapolation radii
+python -m paper_runs.appendix.submit_training --families cfg --seeds 0 --submit
+python -m paper_runs.appendix.cfg_sample
+python -m paper_runs.appendix.cfg_score
+python -m paper_runs.appendix.cfg_aggregate
+python -m paper_runs.appendix.cfg_plot
+
 # Table 3: compositional generalization, each cell over seeds 0-5
 python -m paper_runs.table3.generate_datasets
 python -m paper_runs.table3.submit_training --seeds 0 1 2 3 4 5 --submit
@@ -258,6 +266,27 @@ python -m paper_runs.table3.aggregate_scores
 # (--coverage 25, 50 or 75; --train-samples 5000, 10000 or 15000)
 python scripts/generate_color_shape_dataset.py --output-dir $VGL_ROOT/datasets/color_shape_composition_cov25_samples15k \
   --coverage 25 --train-samples 15000
+# train a color + shape model on it; <run> below is the NNN-DiT-S-2-compositional folder this creates
+torchrun --standalone --nproc_per_node=1 scripts/train_compositional.py --include-properties color shape \
+  --data-path $VGL_ROOT/datasets/color_shape_composition_cov25_samples15k/train \
+  --results-dir $VGL_ROOT/fig4/results/cov25_samples15k_seed0 --global-seed 0
+# sample it on the held-out combinations, then score it
+python -m paper_runs.table3.sample_spec --checkpoint <run>/checkpoints/final_<step>.pt \
+  --dataset $VGL_ROOT/datasets/color_shape_composition_cov25_samples15k --out $VGL_ROOT/fig4/samples/cov25_samples15k_seed0
+python -m paper_runs.table3.score_spec --samples $VGL_ROOT/fig4/samples/cov25_samples15k_seed0 \
+  --out $VGL_ROOT/fig4/scores/cov25_samples15k_seed0.json
+
+# Appendix F: three-skill (size, position, shape) and four-skill (+ color) models at 75% coverage;
+# the three-skill data has 53 images per training combination (the four-skill data adds color and has 9)
+python scripts/generate_compositional_dataset_coverage.py --coverage 0.75 --include-properties radius position shape \
+  --samples-per-combination 53 --output-dir $VGL_ROOT/appendix/multi_skill/data_3skill
+torchrun --standalone --nproc_per_node=1 scripts/train_compositional.py --include-properties radius position shape \
+  --data-path $VGL_ROOT/appendix/multi_skill/data_3skill/train --results-dir $VGL_ROOT/appendix/multi_skill/results/3skill_seed0
+python -m paper_runs.appendix.multi_skill_splits --out-dir $VGL_ROOT/appendix/multi_skill
+python -m paper_runs.table3.sample_spec --checkpoint <run>/checkpoints/final_<step>.pt \
+  --splits $VGL_ROOT/appendix/multi_skill/3skill.json --out $VGL_ROOT/appendix/multi_skill/samples/3skill_seed0
+python -m paper_runs.table3.score_spec --samples $VGL_ROOT/appendix/multi_skill/samples/3skill_seed0 \
+  --out $VGL_ROOT/appendix/multi_skill/scores/3skill_seed0.json
 ```
 
 Everything is written under `$VGL_ROOT` (Table 2 under `MORE_SEEDS/table2`; Table 3's runs under
@@ -265,8 +294,10 @@ Everything is written under `$VGL_ROOT` (Table 2 under `MORE_SEEDS/table2`; Tabl
 under `appendix`); each `manifest.py` reads that variable.
 
 Table 3 samples the online (non-EMA) weights of each run's final checkpoint, 20 samples per
-combination, and scores every sample on its own. `evaluate_table3.py` and `aggregate_table3.py` are an
-earlier scorer; the paper's Table 3 uses `score_table3.py`.
+combination, and scores every sample on its own with `score_table3.py` (`evaluate_table3.py` and
+`aggregate_table3.py` are not used for the paper's Table 3). Figures 4(b) and 5 and Appendix F sample the
+EMA weights, 20 samples per combination (`sample_spec.py`), and score them with the same rules
+(`score_spec.py`).
 
 
 ---
@@ -299,7 +330,8 @@ Datasets are `ImageFolder`-structured with the skill value encoded in the direct
 
 The Table 2 checkpoints are on the Hugging Face Hub at
 [ASethi04/vgl-checkpoints](https://huggingface.co/ASethi04/vgl-checkpoints) (128 files, 98 GB), except
-those of the flow-matching row, the U-Net rotation cell and DiT-L size seed 2. Each run is at
+those of the flow-matching row, the U-Net rotation cell and DiT-L size seed 2 (the Hub's
+`rotation/rotary/seed_0` stops at 74,168 steps; the table uses the same run at 78,000). Each run is at
 `table2/<skill>/<variant>/seed_<n>/final.pt` with its `run_config.json` beside it:
 
 ```bash
@@ -334,9 +366,7 @@ Every metric is rule-based, with no learned components, so scores are reproducib
 
 The size, position, rotation and count rows are the single-skill (Table 2) metrics. Table 3 scores
 every sample with `paper_runs/table3/score_table3.py`, whose docstring gives its rules (count, for
-example, splits touching objects at necks). Appendix A.4 lists the results scored with the earlier
-size and count extractors; that code is `vgl/eval_radius.py` and `paper_runs/table2/evaluate_table2.py`
-at commit 47b7b4a.
+example, splits touching objects at necks).
 
 
 ---

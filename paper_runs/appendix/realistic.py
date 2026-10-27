@@ -214,8 +214,8 @@ def validate_extraction(n=200, size=64, seed=0):
 
         ys, xs = np.nonzero(found)
         if len(ys):
-            pos_errors.append(float(np.hypot(xs.mean() - (size / 2 + cx),
-                                             ys.mean() - (size / 2 + cy))))
+            pos_errors.append(float(np.hypot(xs.mean() - ((size - 1) / 2 + cx),
+                                             ys.mean() - ((size - 1) / 2 + cy))))
             radius_errors.append(abs(math.sqrt(found.sum() / math.pi) - radius))
     return {
         "mean_iou": float(np.mean(ious)),

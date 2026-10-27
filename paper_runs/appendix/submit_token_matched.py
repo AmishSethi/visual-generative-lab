@@ -6,7 +6,7 @@ cannot say whether the gap is the representation or the sequence length.  These 
 fill in the ladder at a fixed 64x64 resolution:
 
     space    model      tokens   source
-    latent   DiT-S/2      16     Table 2 (size extra 5.6)
+    latent   DiT-S/2      16     Table 2 (size extra 7.1)
     pixel    DiT-S/16     16     this script  <- matched to the latent baseline
     latent   DiT-S/1      64     this script  <- more tokens, same resolution
     pixel    DiT-S/2    1024     Table 2 (size extra 51.5)

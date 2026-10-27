@@ -47,7 +47,7 @@ from paper_runs.table2.manifest import CELL_OVERRIDES, DATASET_ROOT, EVAL_ROOT, 
 SIZE_IOU_THRESHOLD = 0.90
 POSITION_ERROR_THRESHOLD = 2.0
 ROTATION_ERROR_THRESHOLD = 5.0
-# results.json also reports rotation accuracy at each of these (the appendix per-seed table uses 2).
+# results.json also reports rotation accuracy at each of these thresholds.
 ROTATION_REPORT_THRESHOLDS = (2.0, 5.0)
 
 
@@ -434,7 +434,7 @@ def detect_count_with_watershed(image: np.ndarray, min_area: int = COUNT_MIN_ARE
 
     blurred = cv2.GaussianBlur(gray, (5, 5), 0)
     thresh, binary = cv2.threshold(blurred, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
-    # Count 0: Otsu always splits the frame in two, so a blank (noise-only) frame used to be
+    # Count 0: Otsu always splits the frame in two, so a blank (noise-only) frame would be
     # cut into ~10 speckle "objects". Require an absolute contrast between the two classes.
     dark, light = blurred[blurred <= thresh], blurred[blurred > thresh]
     if not (dark.size and light.size) or float(light.mean()) - float(dark.mean()) < COUNT_MIN_CONTRAST:
@@ -458,8 +458,8 @@ def detect_count_with_watershed(image: np.ndarray, min_area: int = COUNT_MIN_ARE
         return 0
 
     dist = cv2.distanceTransform(binary, cv2.DIST_L2, 5)
-    # Touching objects: markers relative to each blob's own depth (was 0.35 of the global
-    # maximum, which merged near-touching radius-8 circles and could drop small blobs).
+    # Touching objects: markers relative to each blob's own depth (a fraction of the global
+    # maximum merges near-touching radius-8 circles and can drop small blobs).
     num_blobs, blob = cv2.connectedComponents(binary)
     blob_max = np.zeros(num_blobs)
     np.maximum.at(blob_max, blob.ravel(), dist.ravel())
@@ -773,7 +773,8 @@ def evaluate_position(args, selection: RunSelection, output_dir: Path) -> dict:
         args.max_conditions_per_split,
     )
     config = build_position_config(selection, metadata)
-    training_positions = queries["train"]
+    # The whole training grid, for the nearest-training lookup: a conditions file can empty the train split.
+    training_positions = [round_pair(tuple(position)) for position in metadata["positions"]]
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     model = load_position_model(config, device)
     sampler = create_sampler(config, args.num_sampling_steps)
@@ -815,7 +816,9 @@ def main():
     parser.add_argument("--num-samples-per-condition", type=int, default=20)
     parser.add_argument("--num-sampling-steps", type=int, default=250)
     parser.add_argument("--eval-batch-size", type=int, default=8)
-    parser.add_argument("--max-conditions-per-split", type=int, default=None)
+    parser.add_argument("--max-conditions-per-split", type=int, default=None,
+                        help="Score only the first N conditions of each split. This is a prefix, not a sample: for "
+                             "position it is the leftmost columns of the grid, so use --conditions-file for a representative subset.")
     parser.add_argument(
         "--conditions-file",
         type=Path,
@@ -857,7 +860,7 @@ def main():
         default="numeric",
         help="How count 0 is queried. 'numeric' (Table 2) moves the model's null value to -1 at inference, "
              "so 0 is embedded like every other count. 'null' keeps the null value, so 0 is queried as the "
-             "null token (Figures 3, 9 and 11). Other counts, and the U-Net, which has no null value, "
+             "null token (Figures 3 and 11). Other counts, and the U-Net, which has no null value, "
              "are unaffected.",
     )
     args = parser.parse_args()

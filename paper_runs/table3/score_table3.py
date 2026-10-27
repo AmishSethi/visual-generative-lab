@@ -13,17 +13,24 @@ Detection and the object
   count, "the object" is the largest 8-connected component of the mask (stray specks are ignored);
   in count pairs every component of at least COUNT_MIN_AREA px is an object.
 
-  size      IoU >= 0.90 between the object mask and the mask of the REQUESTED shape at the requested
-            size, rendered by the dataset generator at the object's centroid (best of a 1/4-px
-            translation grid within +-0.5 px), so size is scored independently of position. Masks get
-            a 3x3 close and open, analogous to the single-skill size metric (vgl/eval_radius), which
-            compares against a circle at the canvas centre without alignment.
+  size      the object's area is between 0.9 and 1/0.9 times the reference area, the area of the
+            REQUESTED shape at the requested size as the dataset draws it (the generator's render at
+            the canvas centre, in the requested colour, with the same mask steps; every dataset object
+            sits at an integer position, where the raster is the same). Equivalently the implied size,
+            radius_ratio = sqrt(area / reference area), is within 0.949 .. 1.054 of the requested size.
+            Concentric renders of one shape whose areas differ by the factor 0.9 have IoU 0.90, and
+            IoU >= 0.90 with a render of the reference area implies this band, so size is scored
+            independently of position and of the outline (a squashed object of the right size passes
+            size and fails shape). The area is that of the largest component of the mask after a 3x3
+            close and open, analogous to the single-skill size metric (vgl/eval_radius). Diagnostic:
+            radius_iou, the IoU between that mask and the mask of the requested shape at the requested
+            size, rendered at the object's centroid (best of a 1/4-px translation grid within +-0.5 px).
   position  Euclidean distance <= 2 px between the centre of mass of the object and the centre of
             mass of the ground-truth render of the requested position (requested shape and size; for
             the rotated object, at the detected angle, because the arrow's centroid is not its rotation
-            centre). The Appendix A.4 / single-skill rule (centroid minus the canvas centre (32, 32))
-            is returned as position_ok_a4; it carries a renderer offset of 0.5-0.6 px for the four
-            shapes and up to 1.35 px for the arrow.
+            centre). The Appendix A.4 / single-skill rule (centroid minus the canvas centre (31.5, 31.5),
+            as in vgl/eval_position.py) is returned as position_ok_a4; it carries a renderer offset of
+            up to about 0.5 px for the four shapes and about 1 px for the arrow.
   rotation  the sample is translated so the object's centroid sits at a fixed point and correlated with
             a 1-degree bank of templates drawn by the dataset renderer (template centroids at the same
             point); circular error <= 5 deg (the threshold of Appendix A.4). The error is taken modulo
@@ -70,7 +77,9 @@ if str(RELEASE) not in sys.path:
 from scripts.generate_compositional_dataset_coverage import generate_shape_image  # noqa: E402
 
 IMAGE_SIZE = 64
-SIZE_IOU_THRESHOLD = 0.90
+SIZE_IOU_THRESHOLD = 0.90  # concentric renders at this IoU differ in size by the factor below
+SIZE_RATIO_MIN = math.sqrt(SIZE_IOU_THRESHOLD)  # implied size / requested size, inclusive band
+SIZE_RATIO_MAX = 1.0 / SIZE_RATIO_MIN
 POSITION_THRESHOLD_PX = 2.0
 ROTATION_THRESHOLD_DEG = 5.0
 ROTATION_STRICT_DEG = 2.0
@@ -209,6 +218,18 @@ def render_mask_at(shape, radius, target_xy, rotation=0.0, color=(255, 0, 0)):
     square and triangle rotate about their centroid, so the offset holds at every angle)."""
     ox, oy = _offset(shape)
     return otsu(render(shape, radius, (target_xy[0] - ox, target_xy[1] - oy), rotation, color))[0]
+
+
+_REF_AREA: dict = {}
+
+
+def reference_area(shape, radius, color=(255, 0, 0)) -> float:
+    """Area of the cleaned mask of `shape` at `radius` as the dataset draws it: the generator's render at the
+    canvas centre (dataset objects sit at integer positions, where the raster is the same)."""
+    key = (shape, round(float(radius), 3), tuple(color))
+    if key not in _REF_AREA:
+        _REF_AREA[key] = float(clean(otsu(render(shape, radius, (0.0, 0.0), color=color))[0]).sum())
+    return _REF_AREA[key]
 
 
 ALIGN_GRID = (-0.5, -0.25, 0.0, 0.25, 0.5)  # px, around the centroid-matched placement
@@ -528,8 +549,9 @@ def score_sample(img: np.ndarray, cond: dict, ctx: dict, shape_method: str | Non
     if "radius" in props:
         m = largest(clean(raw))
         if m is not None:
+            rec["radius_ratio"] = math.sqrt(float(m.sum()) / reference_area(shape_req, cond["radius"], color_req))
+            rec["radius_ok"] = SIZE_RATIO_MIN <= rec["radius_ratio"] <= SIZE_RATIO_MAX
             rec["radius_iou"] = aligned_iou(m, shape_req, cond["radius"], color=color_req)
-            rec["radius_ok"] = rec["radius_iou"] >= SIZE_IOU_THRESHOLD
 
     if "rotation" in props:
         bank = rotation_bank(ctx["rotation_shape"])
@@ -542,7 +564,7 @@ def score_sample(img: np.ndarray, cond: dict, ctx: dict, shape_method: str | Non
 
     if "position" in props:
         cy, cx = ndimage.center_of_mass(whole.astype(np.float32))
-        dx, dy = cx - IMAGE_SIZE / 2.0, cy - IMAGE_SIZE / 2.0
+        dx, dy = cx - (IMAGE_SIZE - 1) / 2.0, cy - (IMAGE_SIZE - 1) / 2.0
         rec["position_det"] = (float(dx), float(dy))
         rec["position_err_a4"] = float(math.hypot(dx - cond["position"][0], dy - cond["position"][1]))
         rec["position_ok_a4"] = rec["position_err_a4"] <= POSITION_THRESHOLD_PX
