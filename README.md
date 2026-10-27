@@ -217,10 +217,10 @@ scripts/                   training entry points (one per skill) and the two-ski
 
 paper_runs/              code behind the paper's tables (the paper's checklist lists what is not included)
   table2/                single-skill generalization (Table 2)
-  table3/                compositional generalization (Table 3)
+  table3/                compositional generalization (Table 3, Figures 4(b) and 5)
   appendix/              experiments behind the appendix: data scaling, resolution, token-matched
                          latent vs pixel, visually complex renders, text conditioning, the
-                         text-to-image probe, and coverage vs K
+                         text-to-image probe, coverage vs K, and the three- and four-skill splits
 ```
 
 ---
@@ -258,6 +258,18 @@ python -m paper_runs.table3.aggregate_scores
 # (--coverage 25, 50 or 75; --train-samples 5000, 10000 or 15000)
 python scripts/generate_color_shape_dataset.py --output-dir $VGL_ROOT/datasets/color_shape_composition_cov25_samples15k \
   --coverage 25 --train-samples 15000
+# sample a trained color + shape model on the held-out combinations, then score it
+python -m paper_runs.table3.sample_spec --checkpoint <run>/checkpoints/final_<step>.pt \
+  --dataset $VGL_ROOT/datasets/color_shape_composition_cov25_samples15k --out $VGL_ROOT/fig4/samples/cov25_samples15k_seed0
+python -m paper_runs.table3.score_spec --samples $VGL_ROOT/fig4/samples/cov25_samples15k_seed0 \
+  --out $VGL_ROOT/fig4/scores/cov25_samples15k_seed0.json
+
+# Appendix G: three-skill (size, position, shape) and four-skill (+ color) models at 75% coverage
+python -m paper_runs.appendix.appendix_g_splits --out-dir $VGL_ROOT/appendix/appendix_g
+python -m paper_runs.table3.sample_spec --checkpoint <run>/checkpoints/final_<step>.pt \
+  --splits $VGL_ROOT/appendix/appendix_g/3skill.json --out $VGL_ROOT/appendix/appendix_g/samples/3skill_run1
+python -m paper_runs.table3.score_spec --samples $VGL_ROOT/appendix/appendix_g/samples/3skill_run1 \
+  --out $VGL_ROOT/appendix/appendix_g/scores/3skill_run1.json
 ```
 
 Everything is written under `$VGL_ROOT` (Table 2 under `MORE_SEEDS/table2`; Table 3's runs under
@@ -266,7 +278,9 @@ under `appendix`); each `manifest.py` reads that variable.
 
 Table 3 samples the online (non-EMA) weights of each run's final checkpoint, 20 samples per
 combination, and scores every sample on its own. `evaluate_table3.py` and `aggregate_table3.py` are an
-earlier scorer; the paper's Table 3 uses `score_table3.py`.
+earlier scorer; the paper's Table 3 uses `score_table3.py`. Figures 4(b) and 5 and Appendix G sample the
+EMA weights, 20 samples per combination (`sample_spec.py`), and score them with the same rules
+(`score_spec.py`).
 
 
 ---
