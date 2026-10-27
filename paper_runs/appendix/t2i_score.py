@@ -8,11 +8,17 @@ VGL uses on its own clean renders.
 
 `--validate` runs the identical scorer over VGL ground-truth renders first; the
 validation numbers are reported alongside the T2I numbers.
+
+Images come from t2i_generate.py (<images-root>/<model>/<skill>/<condition>/sample_*.png). The table of
+Appendix G (Table 15: accuracy over the measured images, and the shuffled-label chance level) is computed
+by t2i_analyze.py; the per-condition accuracies written here are for inspection.
+
+    python -m paper_runs.appendix.t2i_score --validate
+    python -m paper_runs.appendix.t2i_analyze
 """
 import argparse
 import json
 import sys
-from collections import defaultdict
 from pathlib import Path
 
 import cv2
@@ -37,25 +43,9 @@ ROTATION_TOLERANCE_DEG = 22.5  # half a compass sector
 MIN_BLOB_AREA_FRAC = 0.0008    # ignore specks below this fraction of the image
 
 
-BORDER_FRAC = 0.06          # width of the ring used to estimate the background
-BACKGROUND_UNIFORM_STD = 26  # per-channel std above which the background is not flat
-BACKGROUND_MIN_BRIGHTNESS = 170
-MAX_FOREGROUND_FRACTION = 0.92
-
-
-def background_stats(img_rgb):
-    """Estimate the background colour from a border ring."""
-    h, w = img_rgb.shape[:2]
-    b = max(2, int(round(BORDER_FRAC * min(h, w))))
-    ring = np.concatenate([
-        img_rgb[:b].reshape(-1, 3), img_rgb[-b:].reshape(-1, 3),
-        img_rgb[:, :b].reshape(-1, 3), img_rgb[:, -b:].reshape(-1, 3),
-    ]).astype(np.float32)
-    return np.median(ring, axis=0), float(ring.std(axis=0).mean())
-
-
 REDNESS_THRESHOLD = 45      # R - max(G, B), on 0-255
 MIN_SUBJECT_FRACTION = 0.0008
+MAX_FOREGROUND_FRACTION = 0.92
 
 
 def redness(img_rgb):
@@ -135,7 +125,8 @@ def main_blob(img_rgb):
     border or corner gradient, and the largest red blob is then the decoration.
     Those decorations touch the image edge or enclose a hole, so the largest
     blob that does neither is the object.  If no blob qualifies, the largest
-    blob is used, so a dot that fills the frame is still measured.
+    blob is used, so an object that touches the edge or encloses a hole is
+    measured only when no other blob qualifies.
     """
     mask = foreground_mask(img_rgb)
     h, w = mask.shape
@@ -344,10 +335,6 @@ def score_condition_dir(skill, condition, cond_dir):
             results.append({"pred": pred, "correct": bool(ok), "compliant": True,
                             "error": None if pred is None else angle_error(pred, target)})
     return results
-
-
-def condition_key_to_dirname(condition):
-    return str(condition).replace(" ", "_").replace("%", "pct")
 
 
 def dirname_to_condition(skill, name):
