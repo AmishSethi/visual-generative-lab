@@ -30,8 +30,9 @@ times as t = sigmoid(u) (`--flow-use-sigmoid-time`); the Table 2 row is `flow_tf
 `{sinusoidal,rotary,adaln,vae,flow,unet}_nz`, where `_nz` marks a zero null embedding
 (`--null-embedding-type zero`); `rotation/baseline` uses a learnable one.
 
-Not on the Hub: the flow-matching row (`flow_tfix`), the U-Net rotation cell (`unet_sincos`) and
-DiT-L size seed 2.
+Not on the Hub: the flow-matching row (`flow_tfix`), the U-Net rotation cell (`unet_sincos`),
+DiT-L size seed 2, and the guidance model of Figure 6 (the size baseline with conditioning dropout
+0.1, `paper_runs/appendix/submit_training.py --families cfg`).
 
 Each file contains `model`, `ema`, `opt`, `train_steps` and `epoch`. Evaluation uses the **EMA** weights.
 

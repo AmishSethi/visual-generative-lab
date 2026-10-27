@@ -245,6 +245,14 @@ python -m paper_runs.table2.evaluate_table2 --skill position --variant dit_large
   --conditions-file paper_runs/table2/position_subsample_100.json
 python -m paper_runs.table2.aggregate_table2
 
+# Figure 6 (Appendix A.5): the size baseline trained with conditioning dropout 0.1 (seed 0),
+# sampled at guidance scales 1-100 on the Table 2 interpolation and extrapolation radii
+python -m paper_runs.appendix.submit_training --families cfg --seeds 0 --submit
+python -m paper_runs.appendix.cfg_sample
+python -m paper_runs.appendix.cfg_score
+python -m paper_runs.appendix.cfg_aggregate
+python -m paper_runs.appendix.cfg_plot
+
 # Table 3: compositional generalization, each cell over seeds 0-5
 python -m paper_runs.table3.generate_datasets
 python -m paper_runs.table3.submit_training --seeds 0 1 2 3 4 5 --submit
