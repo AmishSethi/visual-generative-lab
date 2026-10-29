@@ -245,6 +245,9 @@ python -m paper_runs.table2.evaluate_table2 --skill rotation --variant baseline_
 python -m paper_runs.table2.evaluate_table2 --skill position --variant dit_large --seed 0 \
   --conditions-file paper_runs/table2/position_subsample_100.json
 python -m paper_runs.table2.aggregate_table2
+# Table 8 (Appendix C.1): the Table 2 baseline extrapolation results, binned by distance from the
+# training range relative to its width
+python -m paper_runs.appendix.matched_distance
 
 # Figure 6 (Appendix A.5): the size baseline trained with conditioning dropout 0.1 (seed 0),
 # sampled at guidance scales 1-100 on the Table 2 interpolation and extrapolation radii
