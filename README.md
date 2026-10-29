@@ -26,11 +26,12 @@ three splits:
 ## Findings
 
 1. **Extrapolation is limited; rotation is the exception.** Every skill fits its training support
-   nearly perfectly, and only rotation continues to work far outside it.
+   nearly perfectly but extrapolates only slightly beyond it, except rotation, which some models
+   extrapolate across its entire out-of-range set.
 2. **Coverage beats dataset size.** At a fixed image budget, spreading samples across more unique
    skill combinations beats concentrating them on fewer.
-3. **Skills do not always fail independently.** An out-of-range request in one skill can degrade
-   the others, even when those remain in range.
+3. **Skills mostly fail independently, except position.** An out-of-range position can also lower
+   accuracy on the skills that stay in range.
 
 ---
 
@@ -115,8 +116,8 @@ Thresholds are listed under [Evaluation metrics](#evaluation-metrics).
   </tbody>
 </table>
 
-The baseline reaches ~100% on every skill's training support, and only rotation extrapolates well
-beyond it. Scaling to DiT-L (~306M parameters, 14× the baseline) improves count and position
+The baseline reaches ~100% on every skill's training support, and only rotation has seeds that
+extrapolate across its whole out-of-range set. Scaling to DiT-L (~306M parameters, 14× the baseline) improves count and position
 extrapolation but not size or rotation.
 
 Reproduce this table with [`paper_runs/table2/`](paper_runs/table2) — see
