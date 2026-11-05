@@ -11,7 +11,8 @@
   text_cond  frozen text-encoder embeddings of the skill value in place of
              numeric conditioning, trained on the Table 2 size and rotation
              datasets and the radius-8 random-layout count set, so only the
-             conditioning differs.
+             conditioning differs.  Table 12's rotation interpolation cell
+             scores all 270 midpoints (--max-conditions-per-split 270).
 
   count_random  the numeric comparator of the text-conditioned count run
              (submit_training.py --families count_random).

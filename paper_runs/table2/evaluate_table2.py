@@ -860,7 +860,7 @@ def main():
         default="numeric",
         help="How count 0 is queried. 'numeric' (Table 2) moves the model's null value to -1 at inference, "
              "so 0 is embedded like every other count. 'null' keeps the null value, so 0 is queried as the "
-             "null token (Figures 3 and 11). Other counts, and the U-Net, which has no null value, "
+             "null token. Other counts, and the U-Net, which has no null value, "
              "are unaffected.",
     )
     args = parser.parse_args()

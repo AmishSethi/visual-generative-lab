@@ -166,7 +166,7 @@ def jobs_text(seed):
 
 def jobs_count_random(seed):
     """The numeric baseline on the text-conditioned count run's data and schedule
-    (1000 epochs on the radius-8 random-layout set); Appendix D.4 averages seeds 0-8."""
+    (1000 epochs on the radius-8 random-layout set); Appendix C averages seeds 0-8."""
     data = DATASET_ROOT / "count_random"
     results = RESULTS_ROOT / "count_random" / f"seed_{seed}"
     cmd = common_args("count", data, results, 1000, 64, "DiT-S/2", seed)
@@ -216,7 +216,7 @@ def jobs_budget5k(seed):
     """The shape x colour grid (S=4/8, C=8/16, coverage 25/50/75) at a
     5,000-image budget.
 
-    At a 15,000-image budget eight of the twelve cells score 100% (Table 13), so
+    At a 15,000-image budget eight of the twelve cells score 100% (Table 14), so
     coverage is hard to separate from K.  Five thousand
     images keeps the grid below saturation, on the part of the curve where the
     paper's compositional results differ, and each run takes ~6h rather than

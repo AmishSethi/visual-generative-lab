@@ -29,7 +29,7 @@ T2 = Path(f"{VGL_ROOT}/MORE_SEEDS/table2")
 if __package__ in (None, ""):
     sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
-# Simple-64 runs behind each comparator: the size baseline (Table 11 averages seeds 0-9) and the three
+# Simple-64 runs behind each comparator: the size baseline (Table 13 averages seeds 0-9) and the three
 # learnable-null rotation baseline seeds as evaluated by paper_runs/table2 (submit_eval.py), and for
 # count the random-layout comparator (radius-8 circles, 1000 epochs, seeds 0-8; eval_family.py
 # --family count_random), the layout and schedule of the complex count runs.

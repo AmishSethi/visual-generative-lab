@@ -4,7 +4,7 @@
 Unlike `paper_runs/table2/aggregate_table2.py`, which is fixed to the Table 2 seeds,
 this reads whatever seeds exist. Size and position read the Table 2 baseline and
 rotation the Table 2 rotation baseline (baseline_nz). Count reads the 1000-epoch
-random-layout comparator of Appendices D.3 and D.4 (radius-8 circles at random
+random-layout comparator of Appendix C (radius-8 circles at random
 positions; eval_family.py --family count_random), not the Table 2 count runs.
 """
 import argparse

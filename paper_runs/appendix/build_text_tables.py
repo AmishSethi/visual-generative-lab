@@ -44,7 +44,8 @@ GRIDS = {
     # the extended extrapolation set (1-4 and 21-30).
     "size": np.arange(0.0, 32.5, 0.5),
     "count": np.arange(0.0, 11.0, 1.0),
-    "rotation": np.arange(0.0, 360.0, 1.0),
+    # Half-degree steps, so each interpolation midpoint selects its own sentence.
+    "rotation": np.arange(0.0, 360.0, 0.5),
 }
 
 

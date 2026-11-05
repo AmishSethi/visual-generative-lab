@@ -12,8 +12,8 @@ patterns. VGL trains diffusion models from scratch on synthetic data where every
 controlled by construction, then measures generalization with rule-based metrics that have no learned
 components.
 
-Six skills — **size**, **position**, **rotation**, **count**, **shape**, **color** — each evaluated on
-three splits:
+Six skills — **size**, **position**, **rotation**, **count**, **shape**, **color**. The four numeric
+skills are evaluated on up to three splits (count has no interpolation split):
 
 | split | meaning |
 |---|---|
@@ -25,11 +25,11 @@ three splits:
 
 ## Findings
 
-1. **Extrapolation is limited; rotation is the exception.** Every skill fits its training support
-   nearly perfectly but extrapolates only slightly beyond it, except rotation, which some models
-   extrapolate across its entire out-of-range set.
-2. **Coverage beats dataset size.** At a fixed image budget, spreading samples across more unique
-   skill combinations beats concentrating them on fewer.
+1. **Extrapolation is limited.** Every skill fits its training support nearly perfectly but
+   extrapolates only slightly beyond it, and rotation extrapolation accuracy varies widely across
+   seeds.
+2. **The number of distinct combinations matters more than dataset size.** At a fixed image budget,
+   spreading samples across more unique skill combinations beats concentrating them on fewer.
 3. **Skills mostly fail independently, except position.** An out-of-range position can also lower
    accuracy on the skills that stay in range.
 
@@ -194,6 +194,8 @@ Each skill has its own training entry point, because the conditioning differs:
 | multi-skill | `scripts/train_compositional.py` | `--include-properties` |
 
 In file names and flags the size skill is called radius (e.g. `--radius-embedding-type`).
+The scripts' own defaults are not the paper's settings; use the commands above or the
+`paper_runs/*/submit_training.py` scripts, which pass every flag.
 
 ---
 

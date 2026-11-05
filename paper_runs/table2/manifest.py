@@ -220,7 +220,7 @@ DATASET_SPECS = {
         "image_size": 64,
         "counts": list(range(2, 8)),
         "circle_radius": 4,
-        "lattice_gap": 8,          # circles sit on a 16-px lattice (2 * radius + gap), 8 px of clearance
+        "lattice_gap": 8,          # circles sit on a 16-px lattice (2 * radius + gap), 7 px of clearance between the 9-px-wide drawn discs
         "seed": DATASET_SEED,
     },
 }
