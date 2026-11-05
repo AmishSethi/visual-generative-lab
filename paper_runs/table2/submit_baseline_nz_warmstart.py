@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 """Warm-start rotation `baseline_nz` from seed 4's step-20k checkpoint.
 
-This is the diagnosis-implies-fix experiment of Appendix K:
+This is a diagnosis-implies-fix experiment:
     Hypothesis: rotation collapse is determined by step 20k of training.
     Prediction: warm-starting from a healthy seed's step-20k checkpoint with
     FRESH downstream training should reduce the 3/10 collapse rate toward 0/N.

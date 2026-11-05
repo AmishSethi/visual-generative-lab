@@ -49,7 +49,7 @@ def main():
     parser.add_argument("--steps", type=int, default=250)
     parser.add_argument("--eval-batch-size", type=int, default=20)
     parser.add_argument("--max-conditions-per-split", type=int, default=50,
-                        help="Conditions per split, spread evenly (Table 7 scores 50 for position "
+                        help="Conditions per split, spread evenly (Table 9 scores 50 for position "
                              "and rotation; size and count have fewer, so they are scored in full).")
     parser.add_argument("--out", type=Path, default=EVAL_ROOT / "scaling_results.json")
     args = parser.parse_args()
