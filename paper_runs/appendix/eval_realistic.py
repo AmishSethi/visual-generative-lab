@@ -184,6 +184,8 @@ def evaluate(skill, seed, num_samples, steps, batch_size, max_conditions, device
 
     queries = t2.maybe_truncate_queries(queries, max_conditions)
     model = load(config, device)
+    if skill == "count":
+        t2.query_count_zero_as_number(model)  # count 0 is queried as a number, as in Table 2
     sampler = t2.create_sampler(config, steps)
 
     splits = {}

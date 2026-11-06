@@ -712,8 +712,8 @@ def evaluate_count(args, selection: RunSelection, output_dir: Path) -> dict:
     config = build_count_config(selection)
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     model = load_radius_model(config, device)
-    # Callers that pass their own args without count_zero (the appendix evaluators) keep the null token.
-    if getattr(args, "count_zero", "null") == "numeric":
+    # Callers that pass their own args without count_zero (the appendix evaluators) also query 0 as a number.
+    if getattr(args, "count_zero", "numeric") == "numeric":
         query_count_zero_as_number(model)
     sampler = create_sampler(config, args.num_sampling_steps)
 
