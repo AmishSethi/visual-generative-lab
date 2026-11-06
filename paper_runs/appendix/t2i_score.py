@@ -10,7 +10,7 @@ VGL uses on its own clean renders.
 validation numbers are reported alongside the T2I numbers.
 
 Images come from t2i_generate.py (<images-root>/<model>/<skill>/<condition>/sample_*.png). The table of
-Appendix G (Table 16: accuracy over the measured images, and the shuffled-label chance level) is computed
+Appendix C.8 (Table 14: accuracy over the measured images, and the shuffled-label chance level) is computed
 by t2i_analyze.py; the per-condition accuracies written here are for inspection.
 
     python -m paper_runs.appendix.t2i_score --validate
