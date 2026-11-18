@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="description"
+        content="Do Diffusion Models Learn to Generalize Basic Visual Skills?">
+  <meta name="keywords" content="diffusion models, generalization, extrapolation, compositional generalization, synthetic data">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta property="og:title" content="Do Diffusion Models Learn to Generalize Basic Visual Skills?">
+  <meta property="og:description" content="Visual Generative Lab (VGL): training diffusion models from scratch on controlled synthetic data to measure how they generalize size, position, rotation, count, color and shape. NeurIPS 2026.">
+  <meta property="og:image" content="https://amishsethi.github.io/visual-generative-lab/static/videos/hero_poster.jpg">
+  <meta name="twitter:card" content="summary_large_image">
+  <title>Do Diffusion Models Learn to Generalize Basic Visual Skills?</title>
+
+  <link href="https://fonts.googleapis.com/css?family=Google+Sans|Noto+Sans|Castoro"
+        rel="stylesheet">
+
+  <link rel="stylesheet" href="./static/css/bulma.min.css">
+  <link rel="stylesheet" href="./static/css/fontawesome.all.min.css">
+  <link rel="stylesheet"
+        href="https://cdn.jsdelivr.net/gh/jpswalsh/academicons@1/css/academicons.min.css">
+  <link rel="stylesheet" href="./static/css/index.css">
+  <link rel="icon" href="data:,">
+
+  <script defer src="./static/js/fontawesome.all.min.js"></script>
+</head>
+<body>
+
+<section class="hero">
+  <div class="hero-body">
+    <div class="container is-max-desktop">
+      <div class="columns is-centered">
+        <div class="column has-text-centered">
+          <h1 class="title is-1 publication-title">Do Diffusion Models Learn to Generalize<br>Basic Visual Skills?</h1>
+          <div class="is-size-5 publication-authors">
+            <span class="author-block">
+              <a href="https://amishsethi.github.io">Amish Sethi</a>,</span>
+            <span class="author-block">
+              <a href="https://boyazeng.github.io">Boya Zeng</a>,</span>
+            <span class="author-block">
+              <a href="https://wenhaochai.com">Wenhao Chai</a>,</span>
+            <span class="author-block">
+              <a href="https://www.cs.princeton.edu/~zhuangl">Zhuang Liu</a>
+            </span>
+          </div>
+
+          <div class="is-size-5 publication-authors">
+            <span class="author-block">Princeton University</span><br>
+          </div>
+
+          <p>
+            <span class="is-size-5"><b>NeurIPS 2026</b></span>
+          </p>
+
+          <div class="column has-text-centered">
+            <div class="publication-links">
+              <!-- PDF Link. -->
+              <span class="link-block">
+                <a href="https://arxiv.org/pdf/2611.22427"
+                   class="external-link button is-normal is-rounded is-dark">
+                  <span class="icon">
+                      <i class="fas fa-file-pdf"></i>
+                  </span>
+                  <span>Paper</span>
+                </a>
+              </span>
+              <span class="link-block">
+                <a href="https://arxiv.org/abs/2611.22427"
+                   class="external-link button is-normal is-rounded is-dark">
+                  <span class="icon">
+                      <i class="ai ai-arxiv"></i>
+                  </span>
+                  <span>arXiv</span>
+                </a>
+              </span>
+              <!-- Code Link. -->
+              <span class="link-block">
+                <a href="https://github.com/AmishSethi/visual-generative-lab"
+                   class="external-link button is-normal is-rounded is-dark">
+                  <span class="icon">
+                      <i class="fab fa-github"></i>
+                  </span>
+                  <span>Code</span>
+                  </a>
+              </span>
+              <!-- Checkpoints Link. -->
+              <span class="link-block">
+                <a href="https://huggingface.co/ASethi04/vgl-checkpoints"
+                   class="external-link button is-normal is-rounded is-dark">
+                  <span class="icon">
+                      <i class="fas fa-database"></i>
+                  </span>
+                  <span>Checkpoints</span>
+                  </a>
+              </span>
+            </div>
+
+          </div>
+          <br>
+          <div class="columns is-centered">
+            <div class="column is-full">
+              <video class="loop-video" poster="./static/videos/hero_poster.jpg" autoplay muted loop playsinline>
+                <source src="./static/videos/hero.mp4" type="video/mp4">
+              </video>
+              <p class="video-caption">
+                Each model is trained from scratch on one skill. We move the requested value through the training range (gray) and past it. The outline shows the requested size, position or angle, and the border turns from green to red when the sample stops matching. The farther we go beyond the training range, the more often the models miss the requested value.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+
+<section class="section">
+  <div class="container is-max-desktop">
+    <!-- Abstract. -->
+    <div class="columns is-centered has-text-centered">
+      <div class="column is-four-fifths">
+        <h2 class="title is-3">Abstract</h2>
+        <div class="content has-text-justified">
+          <p>
+            Diffusion models generate high-quality images, but how well they generalize is hard to measure. Current evaluations rely on human preference and prompt-following benchmarks for text-to-image models and on distribution-level metrics such as Fr&eacute;chet Inception Distance (FID) and Inception Score (IS) for class-conditional models, but these cannot tell whether models learn basic visual skills or largely match training patterns. To address this gap, we introduce the Visual Generative Lab (VGL), a controlled experimental framework for studying how diffusion models learn and generalize basic visual skills, including size, position, rotation, count, color, shape, and their compositions. By generating synthetic training data for each skill from explicit rules, VGL allows precise measurement of generalization with task-specific, rule-based metrics. Training models from scratch on these data reveals three patterns in this controlled setting: (1) with our default design, extrapolation is limited: size and position degrade within a few pixels of the training range, count reaches only about 50% accuracy on out-of-range counts, and rotation extrapolation accuracy varies widely across seeds; (2) for compositional generalization, the number of distinct basic visual skill combinations matters more than dataset size; (3) skills mostly fail independently, except position.
+          </p>
+        </div>
+      </div>
+    </div>
+    <!--/ Abstract. -->
+  </div>
+</section>
+
+
+<section class="section">
+  <div class="container is-max-desktop">
+
+    <!-- VGL -->
+    <div class="columns is-centered">
+      <div class="column is-full">
+        <h2 class="title is-3 has-text-centered">Visual Generative Lab (VGL)</h2>
+      </div>
+    </div>
+    <p>
+      It is hard to tell what a diffusion model has actually learned. Metrics like FID and IS score a whole set of images at once, so they do not show which skills a model gets wrong or how. Benchmarks like GenEval and T2I-CompBench test skills such as counting, but only on pre-trained text-to-image models. Nobody knows exactly what those models saw during training, so a good score could mean the model generalizes, or that it has seen something similar before.
+    </p>
+    <br>
+    <div class="columns is-centered">
+      <div class="column is-full has-text-centered">
+        <p style="font-size: larger;">
+          This leads to our question:<br>
+          <span style="color: red;">do diffusion models <strong style="color: red;">generalize</strong> basic visual skills<br>
+            beyond their training data, or do they mostly <strong style="color: red;">match training patterns</strong>?</span>
+        </p>
+      </div>
+    </div>
+    <br>
+    <div class="content has-text-justified">
+      <div style="text-align: center;">
+        <img src="./static/images/teaser.png" alt="The six VGL skills: size, position, rotation, count, shape and color." style="max-width: 100%; height: auto;">
+      </div>
+      <p>
+        To answer it, we built the <b>Visual Generative Lab (VGL)</b>. We draw simple images from rules and train diffusion models on them from scratch. Because we generate the data, we decide exactly which values of each skill, and which combinations of skills, the model sees in training. Each panel above changes one skill and holds the others fixed. The model receives each value as a number or a label, so asking for an unseen value is a clean test of generalization.
+      </p>
+      <p>
+        We use size as an example. We draw circles on a 64&times;64 pixel canvas and train only on the 16 whole-number radii from 5 to 20 pixels. Then we test three things: <b>interpolation</b>, a radius between training values such as 12.5; <b>extrapolation</b>, a radius outside the range such as 25; and <b>composition</b>, size combined with other skills.
+      </p>
+      <div class="table-container">
+      <table class="table is-narrow is-fullwidth skill-table">
+        <thead>
+          <tr><th>Skill</th><th>Type</th><th>Domain</th><th>Extrapolation values</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>size</td><td>continuous</td><td>radius &isin; [5, 20] px</td><td>{1, 2, 3, 4} &cup; {21, 22, &hellip;, 30} px</td></tr>
+          <tr><td>position</td><td>continuous (2D)</td><td>(x, y) &isin; [&minus;18, 18]<sup>2</sup> px</td><td>L<sub>&infin;</sub> &ge; 4 px outside [&minus;18, 18]<sup>2</sup> (320 positions)</td></tr>
+          <tr><td>rotation</td><td>continuous</td><td>angle &isin; [45&deg;, 315&deg;]</td><td>{0&deg;, &hellip;, 44&deg;} &cup; {316&deg;, &hellip;, 359&deg;}</td></tr>
+          <tr><td>count</td><td>discrete</td><td>{2, 3, &hellip;, 7} objects</td><td>{0, 1, 8, 9}</td></tr>
+          <tr><td>shape</td><td>categorical</td><td>4 classes</td><td>n/a</td></tr>
+          <tr><td>color</td><td>categorical</td><td>8 classes</td><td>n/a</td></tr>
+        </tbody>
+      </table>
+      </div>
+      <p>
+        A short program checks every generated image, with no learned or perceptual metric involved. For size, we compare the mask of the generated circle with the target mask and count the sample as correct when their intersection-over-union (IoU) is at least 0.90. For the other skills we use the center of the mask (position), template matching (rotation), connected components (count), shape templates (shape) and the nearest palette color (color).
+      </p>
+    </div>
+    <!--/ VGL -->
+
+    <hr>
+
+    <!-- Finding 1 -->
+    <div class="columns is-centered">
+      <div class="column is-full-width">
+        <h2 class="title is-3 has-text-centered">Extrapolation Is Limited</h2>
+
+        <div class="content">
+          <p>
+            We first train our default model, a DiT-S/2, on one skill at a time. For size and position, it gets training and in-between values right but <b>fails a few pixels outside the training range</b>. For count, it is right on only 52.5% of counts just outside the range. Rotation is different: some training runs extrapolate perfectly and others do not.
+          </p>
+        </div>
+
+        <div class="content has-text-justified">
+          <div style="text-align: center;">
+            <img src="./static/images/single_skill_curves.png" alt="IoU per radius and angular error per angle, inside and outside the training range." style="max-width: 85%; height: auto;">
+          </div>
+          <p>
+            Left: IoU at each radius. Right: angular error at each angle. Lines are means over seeds (three for size, ten for rotation), and bands show &plusmn;1 standard deviation. The dashed line is what a model would score if it always drew the nearest training value.
+          </p>
+        </div>
+
+        <!-- Size -->
+        <h3 class="title is-4">Size</h3>
+        <div class="content has-text-justified">
+          <div style="text-align: center;">
+            <video class="loop-video" poster="./static/videos/size_poster.jpg" autoplay muted loop playsinline style="max-width: 85%;">
+              <source src="./static/videos/size.mp4" type="video/mp4">
+            </video>
+            <p class="video-caption">Samples from one size model as the requested radius moves from 1 to 30 px. The ring is the requested circle, and the plot traces the radius of the generated circle for three samples.</p>
+          </div>
+          <p>
+            We train on radii from 5 to 20 pixels and test on radii 1 to 4 and 21 to 30. The model gets every training radius right and 96.8% of in-between radii, but only 51.5&plusmn;7.5% of radii outside the range. Every seed still gets at least half its samples right up to radius 24 and falls below half from radius 27 on. Below the range, every seed works at radius 3 and fails at radius 1. <b>The model extrapolates about 4 px above the range and 2 px below it</b>.
+          </p>
+        </div>
+        <!--/ Size -->
+
+        <!-- Position -->
+        <h3 class="title is-4">Position</h3>
+        <div class="content has-text-justified">
+          <div style="text-align: center;">
+            <video class="loop-video" poster="./static/videos/position_poster.jpg" autoplay muted loop playsinline style="max-width: 85%;">
+              <source src="./static/videos/position.mp4" type="video/mp4">
+            </video>
+            <p class="video-caption">Samples from one position model as the requested center moves along the x-axis, up to 6 px outside the training square. The ring is the requested circle, and the plot traces the detected x-coordinate for three samples.</p>
+          </div>
+          <p>
+            We train on a 32&times;32 grid of positions in [&minus;18, 18]<sup>2</sup> pixels, then ask for the 320 positions at least 4 pixels outside that square (L<sub>&infin;</sub> distance). With a 2-pixel tolerance, the model places every training position and 97.4&plusmn;3.2% of in-between positions correctly, but <b>only 29.7&plusmn;16.8% of the far positions</b>. Accuracy falls from 49% at 4.6 px outside the square to 11% at 5.8 px, and the missed circles land closer to the training square than we asked.
+          </p>
+        </div>
+        <!--/ Position -->
+
+        <!-- Rotation -->
+        <h3 class="title is-4">Rotation</h3>
+        <div class="content has-text-justified">
+          <div style="text-align: center;">
+            <video class="loop-video" poster="./static/videos/rotation_poster.jpg" autoplay muted loop playsinline style="max-width: 85%;">
+              <source src="./static/videos/rotation.mp4" type="video/mp4">
+            </video>
+            <p class="video-caption">One sample from each of ten seeds trained on the same data with the same settings, as the requested angle moves from 300&deg; through 0&deg; to 60&deg; and back, crossing the out-of-range arc around 0&deg;. The outline is the requested arrow.</p>
+          </div>
+          <p>
+            We draw asymmetric arrows and train on every whole degree from 45&deg; to 315&deg;, then ask for the angles outside that interval. <b>Whether the model extrapolates depends on the training seed.</b> With the same data and settings, four of ten seeds get the out-of-range angles right to within 2&deg; on average, three are off by 8&deg; to 15&deg;, and three fail near 0&deg;, the angle farthest from the training range, with errors above 30&deg;. Mean accuracy at the 5&deg; threshold is 68.0%. Rotation is the only skill where some seeds get every out-of-range value right.
+          </p>
+        </div>
+        <!--/ Rotation -->
+
+        <!-- Count -->
+        <h3 class="title is-4">Count</h3>
+        <div class="content has-text-justified">
+          <div style="text-align: center;">
+            <video class="loop-video" poster="./static/videos/count_poster.jpg" autoplay muted loop playsinline style="max-width: 85%;">
+              <source src="./static/videos/count.mp4" type="video/mp4">
+            </video>
+            <p class="video-caption">Four samples from the count model shown in the paper's qualitative figure, for requested counts 0 to 9.</p>
+          </div>
+          <p>
+            We train on images with 2 to 7 circles and ask for 0, 1, 8 and 9. The model counts every training value correctly, but <b>gets only 52.5% of the counts just outside the range right</b>.
+          </p>
+        </div>
+        <!--/ Count -->
+
+        <!-- Design choices -->
+        <h3 class="title is-4">Design choices</h3>
+        <div class="content has-text-justified">
+          <div class="wide-figure">
+            <img src="./static/images/design_choices.png" alt="Table of single-skill accuracy under different design choices." style="max-width: 100%; height: auto;">
+          </div>
+          <p>
+            Entries are mean&plusmn;std accuracy (%) over three seeds, or ten for the rotation baseline, and bold rows are our defaults. To check whether these limits come from our setup, we change one design choice at a time: the embedding, the conditioning, pixel or latent space, the training objective, the architecture and the model size. A linear embedding extrapolates better than sinusoidal or rotary embeddings on size, position and rotation, and pixel-space models extrapolate better on those three skills than models trained in the latent space of a pre-trained VAE. Part of that gap may come from sequence length: the latent model sees 16 tokens per image and the pixel model sees 1024. Beyond that, <b>no choice extrapolates better on every skill</b>. AdaLN helps position and count, while concatenation is better on size and rotation. The U-Net loses most of the rotation extrapolation but does comparatively well on count. DiT-L improves count and position but extrapolates no further on size or rotation.
+          </p>
+        </div>
+        <!--/ Design choices -->
+      </div>
+    </div>
+    <!--/ Finding 1 -->
+
+    <hr>
+
+    <!-- Finding 2 -->
+    <div class="columns is-centered">
+      <div class="column is-full-width">
+        <h2 class="title is-3 has-text-centered">Coverage Matters More Than Dataset Size</h2>
+
+        <div class="content">
+          <p>
+            Most prompts ask for several skills at once, such as a red triangle. To test this, we list every combination of skill values, train on only some of them, and check whether the model can draw the rest. We vary two things: <b>coverage</b>, the share of combinations seen in training, and <b>density</b>, the number of images per seen combination.
+          </p>
+        </div>
+
+        <div class="content has-text-justified">
+          <div style="text-align: center;">
+            <img src="./static/images/compositional_combined.png" alt="Compositional evaluation categories and accuracy on held-out combinations by coverage and dataset size." style="max-width: 100%; height: auto;">
+          </div>
+          <p>
+            (a) Test categories on a two-skill grid: A is training, B is interpolation (each value seen, combination unseen), C moves one skill out of range, and D moves both. (b) Color + shape models trained on four shapes and eight colors with 5k, 10k or 15k images in total. Bars show mean accuracy on held-out combinations (both skills correct) over three seeds, and error bars show the range across seeds. <b>For a fixed number of images, seeing more combinations helps more than seeing the same combinations more often</b>. Higher coverage raises held-out accuracy even though each seen combination then gets fewer images. More images per combination at fixed coverage gives no consistent gain.
+          </p>
+          <div style="text-align: center;">
+            <img src="./static/images/heatmap.png" alt="Per-combination shape and color accuracy at 25, 50 and 75 percent coverage." style="max-width: 92%; height: auto;">
+          </div>
+          <p>
+            Results for the 10k-image models, with one cell per combination. The top row scores shape and the bottom row scores color. Black cells are training combinations, and held-out cells show the fraction of correct samples, averaged over three seeds. Held-out shape accuracy grows with coverage, and at 75% coverage both skills are right on every held-out combination.
+          </p>
+        </div>
+      </div>
+    </div>
+    <!--/ Finding 2 -->
+
+    <hr>
+
+    <!-- Finding 3 -->
+    <div class="columns is-centered">
+      <div class="column is-full-width">
+        <h2 class="title is-3 has-text-centered">Skills Mostly Fail Independently, Except Position</h2>
+
+        <div class="content">
+          <p>
+            Next, we push one skill out of its training range and keep the others in range. If a model learned each skill separately, only the out-of-range skill should break, and the others should stay correct.
+          </p>
+        </div>
+
+        <div class="content has-text-justified">
+          <div class="table-container">
+          <table class="table is-narrow skill-table" style="margin-left: auto; margin-right: auto;">
+            <thead>
+              <tr><th>Split</th><th>size</th><th>position</th><th>shape</th><th>color</th></tr>
+            </thead>
+            <tbody>
+              <tr><td>In range</td><td>100.0</td><td>100.0</td><td>100.0</td><td>100.0</td></tr>
+              <tr><td>size OOD</td><td class="fail">54.6</td><td>100.0</td><td>100.0</td><td>100.0</td></tr>
+              <tr><td>position OOD</td><td class="fail">79.5</td><td class="fail">0.0</td><td class="fail">32.0</td><td>100.0</td></tr>
+            </tbody>
+          </table>
+          </div>
+          <p>
+            Accuracy (%) of each skill for one model trained on size, position, shape and color together at 75% coverage. Gray marks accuracy below 90%. An out-of-range size leaves position and shape at 100%. <b>An out-of-range position also breaks skills that are still in range</b>: shape accuracy falls from 100% to 32.0%, even though we asked for shapes the model knows. The two three-skill models show the same pattern (20.4% and 59.9% shape accuracy), and in two-skill models an out-of-range position lowers in-range size to 8.9% and rotation to 54.4%. Color stays at 100% on every split, so some skills are tied to position and others are not.
+          </p>
+        </div>
+      </div>
+    </div>
+    <!--/ Finding 3 -->
+
+    <hr>
+
+    <!-- Discussion -->
+    <div class="columns is-centered">
+      <div class="column is-full-width">
+        <h2 class="title is-3 has-text-centered">Discussion</h2>
+        <div class="content has-text-justified">
+          <p>
+            In our setting, diffusion models <b>handle unseen values and combinations inside their training data well, but rarely carry a skill far beyond it</b>. If large text-to-image models work the same way, much of what looks like generalization may be interpolation within their training data. Data providers and model trainers would then need data that covers the values and combinations users ask for, rather than just more data, and evaluations should test outside that coverage. Our data are synthetic and we mainly study a DiT backbone, so how far this carries over to natural images is still open. We hope VGL is a useful place to study these questions in richer settings.
+          </p>
+        </div>
+      </div>
+    </div>
+    <!--/ Discussion -->
+
+
+  </div>
+</section>
+
+
+<section class="section" id="BibTeX">
+  <div class="container is-max-desktop content">
+    <h2 class="title">BibTeX</h2>
+    <pre><code>@inproceedings{sethi2026vgl,
+  title     = {Do Diffusion Models Learn to Generalize Basic Visual Skills?},
+  author    = {Sethi, Amish and Zeng, Boya and Chai, Wenhao and Liu, Zhuang},
+  booktitle = {Advances in Neural Information Processing Systems (NeurIPS)},
+  year      = {2026}
+}</code></pre>
+  </div>
+</section>
+
+
+<footer class="footer">
+  <div class="container">
+    <div class="columns is-centered">
+      <div class="column is-8">
+        <div class="content">
+          <p>
+            This website is licensed under a <a rel="license"
+                                                href="http://creativecommons.org/licenses/by-sa/4.0/">Creative
+            Commons Attribution-ShareAlike 4.0 International License</a>.
+          </p>
+          <p>
+            Website adapted from the following <a
+              href="https://github.com/nerfies/nerfies.github.io">source code</a>.
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+</footer>
+
+</body>
+</html>
